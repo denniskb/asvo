@@ -7,7 +7,6 @@
 *.vcxproj.user
 
 bin/
-content/
 Debug/
 html/
 ipch/
