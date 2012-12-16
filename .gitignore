@@ -1,4 +1,10 @@
+*.opensdf
+*.sdf
+*.suo
 *.swp
+*.vcxproj.filters
+*.vcxproj.user
 
 bin/
+Debug/
 html/
