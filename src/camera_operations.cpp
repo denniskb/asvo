@@ -1,10 +1,15 @@
 #include "../inc/camera_operations.h"
+
+#include <Windows.h>
+
+#include <GL/freeglut.h>
+
 #include <cutil.h>
+
 #include "../inc/camera.h"
-#include "../inc/vector3.h"
-#include "../inc/math3d.h"
-#include <GL/glut.h>
 #include "../inc/glue.h"
+#include "../inc/math3d.h"
+#include "../inc/vector3.h"
 
 static CUTBoolean initialized = CUTFalse;
 

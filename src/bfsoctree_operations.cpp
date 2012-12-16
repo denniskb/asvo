@@ -1,19 +1,25 @@
 #include "../inc/bfsoctree_operations.h"
-#include "../inc/bfsoctree.h"
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+
+#include <cuda_runtime.h>
+
 #include "../inc/bfsinnernode.h"
 #include "../inc/bfsleaf.h"
+#include "../inc/bfsoctree.h"
+#include "../inc/glue.h"
 #include "../inc/matrix.h"
 #include "../inc/texture_operations.h"
-#include <cuda_runtime.h>
-#include "../inc/glue.h"
 
-BFSOctree BFSOctreeImport(char *path, char *diffuse, char *illum, char *spec, char *normal)
+BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * illum, char const * spec, char const * normal)
 {
 	BFSOctree result;
 	
 	FILE *file = fopen(path, "rb");
+
+	assert( file != nullptr );
 
 	fread(&result.dim, 4, 1, file);
 	fread(&result.innerNodeCount, 4, 1, file);

@@ -1,12 +1,16 @@
 #include "../inc/glue.h"
+
+#include <ctime>
+
 #include <GL/glew.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
+
 #include <cuda_runtime.h>
 #include <cutil.h>
 #include <cutil_inline.h>
 #include <cutil_gl_error.h>
 #include <cutil_gl_inline.h>
-#include <time.h>
+
 #include "../inc/camera_operations.h"
 
 static int _argc;
@@ -15,10 +19,10 @@ static unsigned short int _screenWidth;
 static unsigned short int _screenHeight;
 static unsigned short int _windowWidth;
 static unsigned short int _windowHeight;
+static double _msFrameTime = 33;
 static GLuint _pbo;
 static GLuint _texture;
 static void(*_runKernel)(uchar4 *colorBuffer);
-static unsigned int _timer = 0;
 
 /*
  * Creates a window and sets up the viewport.
@@ -88,8 +92,6 @@ CUTBoolean glueInit(unsigned short int screenWidth,
 	createPBO();
 	createTexture();
 
-	cutCreateTimer(&_timer);
-
 	return CUTTrue;
 }
 
@@ -97,9 +99,7 @@ void glueCleanup()
 {
 	deletePBO();
 	deleteTexture();
-	cutDeleteTimer(_timer);
 	cudaThreadExit();
-	cutilExit(_argc, _argv);
 }
 
 unsigned short int glueGetWindowWidth(void)
@@ -120,7 +120,7 @@ unsigned long int glueGetWindowResolution(void)
 
 double glueGetLastFrameTime(void)
 {
-	return cutGetAverageTimerValue(_timer);
+	return _msFrameTime;
 }
 
 float glueGetWindowRatio(void)
@@ -169,10 +169,11 @@ static CUTBoolean initGL(void)
 
 static void displayFuncDummy(void)
 {	
-	cutStartTimer(_timer);
+	LARGE_INTEGER start;
+	QueryPerformanceCounter( & start );
 	uchar4 *dptr = NULL;
 
-	camUpdate(cutGetAverageTimerValue(_timer));
+	camUpdate(glueGetLastFrameTime());
 
 	// map OpenGL buffer object for writing from CUDA on a single GPU
 	// no data is moved (Win & Linux). When mapped to CUDA, OpenGL
@@ -213,15 +214,17 @@ static void displayFuncDummy(void)
 	glutSwapBuffers();
 	glutPostRedisplay();
 
-	cutStopTimer(_timer);
+	LARGE_INTEGER end;
+	QueryPerformanceCounter( & end );
 
-	if (cutGetTimerValue(_timer) >= 200.f)
-	{
-		char title[100];
-		sprintf(title, "asvo@cuda - %.1f fps", 1000.f / cutGetAverageTimerValue(_timer));
-		glutSetWindowTitle(title);
-		cutResetTimer(_timer);
-	}
+	LARGE_INTEGER freq;
+	QueryPerformanceFrequency( & freq );
+
+	_msFrameTime = ( end.QuadPart - start.QuadPart ) / ( (double) freq.QuadPart ) * 1000;
+
+	char title[100];
+	sprintf( title, "asvo@cuda - %.1f fps", 1000.0 / _msFrameTime );
+	glutSetWindowTitle( title );
 }
 
 /*
@@ -231,10 +234,13 @@ static void initCuda(void)
 {
 	// Use command-line specified CUDA device,
 	// otherwise use device with highest Gflops/s
+#if 0
 	if (cutCheckCmdLineFlag(_argc, (const char**)_argv, "device"))
 		cutilGLDeviceInit(_argc, _argv);
 	else
 		cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());	
+#endif
+	cudaGLSetGLDevice( 0 );
 }
 
 static void createPBO(void)

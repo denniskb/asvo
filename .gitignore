@@ -1,4 +1,5 @@
 *.opensdf
+*.pdb
 *.sdf
 *.suo
 *.swp
@@ -6,5 +7,8 @@
 *.vcxproj.user
 
 bin/
+content/
 Debug/
 html/
+ipch/
+x64/

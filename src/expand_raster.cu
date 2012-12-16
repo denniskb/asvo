@@ -1,18 +1,20 @@
 #include "../inc/expand_raster.h"
-#include "../inc/bfsjob.h"
+
 #include <cuda_runtime.H>
 #include <cutil.h>
+
 #include "../inc/bfsinnernode.h"
+#include "../inc/bfsjob.h"
 #include "../inc/bfsleaf.h"
-#include "../inc/matrix.h"
-#include "../inc/vector3.h"
-#include "../inc/voxeldata.h"
-#include "../inc/object3d.h"
+#include "../inc/bfsoctree_operations.h"
 #include "../inc/camera.h"
 #include "../inc/glue.h"
-#include "../inc/bfsoctree_operations.h"
 #include "../inc/light.h"
 #include "../inc/math3d.h"
+#include "../inc/matrix.h"
+#include "../inc/object3d.h"
+#include "../inc/vector3.h"
+#include "../inc/voxeldata.h"
 
 /**
  * If SHADOW is defined, shadows are rendered using a shadow map.
@@ -40,7 +42,7 @@ static __constant__ unsigned char _level;
 static __device__ unsigned int _travQueuePtr;
 static __device__ BFSJob _queue[QUEUE_LENGTH];
 
-static const texture<unsigned int, 1, cudaReadModeElementType> _depthBuffer;
+static texture<unsigned int, 1, cudaReadModeElementType> _depthBuffer;
 static cudaChannelFormatDesc _depthBufferDesc;
 
 static texture<uchar4, 2, cudaReadModeNormalizedFloat> _diffuse;
@@ -319,10 +321,9 @@ void traverse(unsigned long int innerNodeCount,
 	if (index < _endIndex)
 	{
 		BFSJob job = _queue[index];
-		BFSInnerNode node = { 0.f, 0.f, 0.f,
-							  0, 0, 0, 0, 
-							  0.f, 0.f, 0.f, 0.f,
-							  0, 0 };
+		BFSInnerNode node;
+		node.childPtr = 0;
+		node.mask = 0;
 		
 		if (job.index < innerNodeCount)
 			node = innerNodes[job.index];
@@ -477,7 +478,7 @@ void draw(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer
 #pragma unroll 9
 		for (int i = 0; i < 9; ++i)
 		{
-			index2 = min(max(startIndex + curIndex, 0), _windowResolution);						
+			index2 = min(max(startIndex + curIndex, 0), _windowResolution);
 			if ((depth = tex1Dfetch(_depthBuffer, index2)) < minDepth)
 			{		
 				vd = voxelBuffer[index2];				

@@ -21,7 +21,7 @@
  * This was very handy for writing the math lib, since
  * all math functions shared the same implementation.
  */
-#ifdef CUDA
+#ifdef __CUDACC__
 
 #define $$(funcDef) static __device__ d_##funcDef
 #define $(funcCall) d_##funcCall

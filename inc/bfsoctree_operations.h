@@ -18,7 +18,7 @@
  *
  * @return The BFSOctree stored in the file at path.
  */
-BFSOctree BFSOctreeImport(char *path, char *diffuse, char *illum, char *spec, char *normal);
+BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * illum, char const * spec, char const * normal);
 
 /**
  * Copies the octree's nodes to the device and stores a pointer to them inside

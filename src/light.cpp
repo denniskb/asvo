@@ -1,8 +1,9 @@
 #include "../inc/light.h"
-#include "../inc/vector3.h"
-#include "../inc/math3d.h"
+
 #include "../inc/camera.h"
 #include "../inc/camera_operations.h"
+#include "../inc/math3d.h"
+#include "../inc/vector3.h"
 
 static Vector3 _light = UNIT_Y;
 static float _diffuse = 0.f;

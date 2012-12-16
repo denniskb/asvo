@@ -1,7 +1,8 @@
 #include "../inc/math3d.h"
+
+#include "../inc/matrix.h"
 #include "../inc/util.h"
 #include "../inc/vector3.h"
-#include "../inc/matrix.h"
 
 #ifndef CUDA
 #include <math.h>

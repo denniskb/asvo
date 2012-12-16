@@ -1,13 +1,14 @@
-#include "../inc/kernel_caller.h"
-#include "../inc/object3d.h"
-#include "../inc/voxeldata.h"
 #include <cutil.h>
 #include <cuda_runtime.h>
-#include "../inc/expand_raster.h"
+
 #include "../inc/camera_operations.h"
-#include "../inc/math3d.h"
+#include "../inc/expand_raster.h"
 #include "../inc/glue.h"
+#include "../inc/kernel_caller.h"
 #include "../inc/light.h"
+#include "../inc/math3d.h"
+#include "../inc/object3d.h"
+#include "../inc/voxeldata.h"
 
 // runtime kernel call parameters
 static Object3d _obj;

@@ -14,7 +14,7 @@
 
 // Definition of some constants.
 
-#ifdef CUDA
+#ifdef __CUDACC__
 __constant__ Matrix IDENTITY =
 #else
 const Matrix IDENTITY = 
@@ -24,7 +24,7 @@ const Matrix IDENTITY =
   0.f, 0.f, 1.f, 0.f,
   0.f, 0.f, 0.f, 1.f };
 
-#ifdef CUDA
+#ifdef __CUDACC__
 __constant__ Vector3 UNIT_X = { 1.f, 0.f, 0.f };
 __constant__ Vector3 UNIT_Y = { 0.f, 1.f, 0.f };
 __constant__ Vector3 UNIT_Z = { 0.f, 0.f, 1.f };

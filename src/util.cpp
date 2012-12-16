@@ -1,6 +1,7 @@
 #include "../inc/util.h"
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <cstdio>
+#include <cstdlib>
 
 void loadImage(unsigned char **ptr, char *fileName)
 {	

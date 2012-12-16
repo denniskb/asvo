@@ -1,9 +1,11 @@
 #include "../inc/object3d_operations.h"
-#include "../inc/object3d.h"
-#include "../inc/bfsoctree.h"
+
 #include <cutil.h>
-#include "../inc/matrix.h"
+
+#include "../inc/bfsoctree.h"
 #include "../inc/math3d.h"
+#include "../inc/matrix.h"
+#include "../inc/object3d.h"
 
 Object3d obj3dInit(BFSOctree data, CUTBoolean rhsCoordinateSystem)
 {

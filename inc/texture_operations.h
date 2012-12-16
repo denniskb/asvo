@@ -9,7 +9,7 @@
 // Defintion of constants. Right now, only textures with the following
 // dimensions are supported!
 
-#ifdef CUDA
+#ifdef __CUDACC__
 __constant__ unsigned short int TEX_WIDTH = 1024;
 __constant__ unsigned short int TEX_HEIGHT = 1024;
 __constant__ unsigned long int TEX_DIM = 1024 * 1024;
@@ -28,7 +28,7 @@ const unsigned long int TEX_DIM = TEX_WIDTH * TEX_HEIGHT;
  *
  * @return A Texture representing the image file.
  */
-Texture texInit(char *fileName);
+Texture texInit(char const * fileName);
 
 /**
  * Does cleanup work like releasing allocated memory.
