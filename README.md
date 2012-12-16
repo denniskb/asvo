@@ -1,4 +1,4 @@
-# Animated Sparse Voxel Octrees
+# Animated Sparse Voxel Octrees @ CUDA
 
 
 ## Introduction
