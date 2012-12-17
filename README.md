@@ -21,7 +21,7 @@ This is the high performance CUDA implementation (aka ASVO@CUDA) of the C# proto
 
 ## Usage
 
-After launching the program you can rotate the camera by holding down the left mouse button and moving your mouse. Holding down the right mouse button and moving your mouse allows you to zoom in and out.
+After launching the program you can rotate the camera by holding down the *left* mouse button and moving your mouse. Holding down the *right* mouse button and moving your mouse allows you to zoom in and out.
 
 
 ## Setup
