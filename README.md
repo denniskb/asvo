@@ -41,8 +41,8 @@ After launching the program you can rotate the camera by holding down the *left*
 ## Roadmap
 
 1. Remove Windows dependencies and make code platfrom-independant (remove assumptions about size and layout/endianness of types, provide make-file, etc.).
-2. Port project from C to C++. Refactor code to make use of the newest CUDA API features (thrust, streams, etc.).
-3. Update project to CUDA 5.0.
+2. Update project to CUDA 5.0.
+3. Port project from C to C++. Refactor code to make use of the newest CUDA API features (thrust, streams, etc.).
 4. Improve/Extend algorithm.
 
 
