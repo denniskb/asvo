@@ -28,18 +28,18 @@
 #define QUEUE_LENGTH 10000000
 #define INT_MAX_VALUE 4294967295ul
 
-static unsigned long int _clearNumBlocks, _drawNumBlocks, _drawShadowNumBlocks;
-static unsigned long int _h_startIndex, _h_endIndex;
-static unsigned char _h_level;
+static int _clearNumBlocks, _drawNumBlocks, _drawShadowNumBlocks;
+static int _h_startIndex, _h_endIndex;
+static int _h_level;
 
 static __constant__ int _windowWidth, _windowHeight;
 static __constant__ int _windowResolution;
 
-static __constant__ unsigned short int _frame;
+static __constant__ int _frame;
 
-static __constant__ unsigned long int _startIndex, _endIndex;
-static __constant__ unsigned char _level;
-static __device__ unsigned int _travQueuePtr;
+static __constant__ int _startIndex, _endIndex;
+static __constant__ int _level;
+static __device__ int _travQueuePtr;
 static __device__ BFSJob _queue[QUEUE_LENGTH];
 
 static texture<unsigned int, 1, cudaReadModeElementType> _depthBuffer;
@@ -201,7 +201,7 @@ __host__ void expandRasterInit(void)
 __host__ void expandRasterInvoke(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer,
 								 Object3d obj, Camera cam, float *shadowMap, Matrix lightWorldViewProjection)
 {
-	unsigned short int frame = BFSOctreeUpdate(&obj.data);
+	int frame = BFSOctreeUpdate(&obj.data);
 	cudaMemcpyToSymbol(_frame, &frame, sizeof(frame));
 
 	cudaThreadSynchronize();
