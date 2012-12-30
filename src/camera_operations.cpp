@@ -4,14 +4,14 @@
 
 #include <GL/freeglut.h>
 
-#include <cutil.h>
+#include <helper_cuda.h>
 
 #include "../inc/camera.h"
 #include "../inc/glue.h"
 #include "../inc/math3d.h"
 #include "../inc/vector3.h"
 
-static CUTBoolean initialized = CUTFalse;
+static bool initialized = false;
 
 static Camera _cam;
 static Vector3 _pos;
@@ -23,7 +23,7 @@ static float _farPlane;
 
 //mouse movement variables
 static int _startX, _endX, _startY, _endY, _startZ, _endZ;
-static CUTBoolean _button1Down, _button2Down;
+static bool _button1Down, _button2Down;
 
 static void updateMatrices(void);
 
@@ -32,7 +32,7 @@ void camInit(Vector3 pos, Vector3 lookAt,
 {
 	if (!initialized)
 	{
-		initialized = CUTTrue;
+		initialized = true;
 		_pos = pos;
 		_lookAt = lookAt;
 		_fov = fov;
@@ -46,8 +46,8 @@ void camInit(Vector3 pos, Vector3 lookAt,
 		_cam.pos = pos;
 
 		_startX = _endX = _startY = _endY = _startZ = _endZ = 0;
-		_button1Down = CUTFalse;
-		_button2Down = CUTFalse;
+		_button1Down = false;
+		_button2Down = false;
 	}
 }
 
@@ -62,13 +62,13 @@ void mouseFunc(int button, int state, int x, int y)
 	{
 		if (state == GLUT_DOWN)
 		{
-			_button1Down = CUTTrue;
+			_button1Down = true;
 			_startX = _endX = x;
 			_startY = _endY = y;
 		}
 		else if (state == GLUT_UP)
 		{
-			_button1Down = CUTFalse;
+			_button1Down = false;
 			_startX = _endX;
 			_startY = _endY;
 		}
@@ -77,12 +77,12 @@ void mouseFunc(int button, int state, int x, int y)
 	{
 		if (state == GLUT_DOWN)
 		{
-			_button2Down = CUTTrue;
+			_button2Down = true;
 			_startZ = _endZ = y;
 		}
 		else if (state == GLUT_UP)
 		{
-			_button2Down = CUTFalse;
+			_button2Down = false;
 			_startZ = _endZ;
 		}
 	}

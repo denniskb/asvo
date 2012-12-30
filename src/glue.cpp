@@ -1,22 +1,20 @@
 #include "../inc/glue.h"
 
+#include <Windows.h>
+
 #include <ctime>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
 #include <cuda_runtime.h>
-#include <cutil.h>
-#include <cutil_inline.h>
-#include <cutil_gl_error.h>
-#include <cutil_gl_inline.h>
+#include <cuda_gl_interop.h>
+#include <helper_cuda.h>
 
 #include "../inc/camera_operations.h"
 
 static int _argc;
 static char **_argv;
-static unsigned short int _screenWidth;
-static unsigned short int _screenHeight;
 static unsigned short int _windowWidth;
 static unsigned short int _windowHeight;
 static double _msFrameTime = 33;
@@ -28,7 +26,7 @@ static void(*_runKernel)(uchar4 *colorBuffer);
  * Creates a window and sets up the viewport.
  * Original code by Rob Farber.
  */
-static CUTBoolean initGL(void);
+static bool initGL(void);
 
 /*
  * Dummy for the display function called by glut. For now,
@@ -68,31 +66,29 @@ static void deletePBO(void);
  */
 static void deleteTexture(void);
 
-CUTBoolean glueInit(unsigned short int screenWidth,
-					unsigned short int screenHeight,
-					unsigned short int windowWidth,
-					unsigned short int windowHeight,
-					int argc, char **argv,
-					void(*runKernel)(uchar4 *colorBuffer))
+bool glueInit
+(
+	unsigned short int windowWidth,
+	unsigned short int windowHeight,
+	int argc, char **argv,
+	void(*runKernel)(uchar4 *colorBuffer)
+)
 {
 	_argc = argc;
 	_argv = argv;
-	_screenWidth = screenWidth;
-	_screenHeight = screenHeight;
 	_windowWidth = windowWidth;
 	_windowHeight = windowHeight;
 	_runKernel = runKernel;
 
 	if (!initGL())
-		return CUTFalse;
+		return false;
 
 	initCuda();
-	CUT_CHECK_ERROR_GL();
 
 	createPBO();
 	createTexture();
 
-	return CUTTrue;
+	return true;
 }
 
 void glueCleanup()
@@ -135,12 +131,12 @@ void deleteTexture(void)
     _texture = NULL;
 }
 
-static CUTBoolean initGL(void)
+static bool initGL(void)
 {
 	glutInit(&_argc, _argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutInitWindowSize(_windowWidth, _windowHeight);
-	glutInitWindowPosition((_screenWidth - _windowWidth) / 2, (_screenHeight - _windowHeight) / 2);
+	glutInitWindowPosition( 50, 50 );
 	glutCreateWindow("asvo@cuda");	
 	glutDisplayFunc(displayFuncDummy);
 	glutMouseFunc(mouseFunc);
@@ -149,7 +145,7 @@ static CUTBoolean initGL(void)
 	glewInit();
 	if (! glewIsSupported( "GL_VERSION_2_0 " ) ) {
 		fprintf(stderr, "ERROR: Support for necessary OpenGL extensions missing.");
-		return CUTFalse;
+		return false;
 	}  
 	
 	glViewport(0, 0, _windowHeight, _windowHeight);
@@ -164,7 +160,7 @@ static CUTBoolean initGL(void)
 
 	glOrtho(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f);
   
-	return CUTTrue;
+	return true;
 }
 
 static void displayFuncDummy(void)
@@ -182,7 +178,9 @@ static void displayFuncDummy(void)
 
 	// execute the kernel
 	if (_runKernel != NULL)
+	{
 		_runKernel(dptr);
+	}
 
 	// unmap buffer object
 	cudaGLUnmapBufferObject(_pbo);
@@ -232,14 +230,6 @@ static void displayFuncDummy(void)
  */
 static void initCuda(void)
 {
-	// Use command-line specified CUDA device,
-	// otherwise use device with highest Gflops/s
-#if 0
-	if (cutCheckCmdLineFlag(_argc, (const char**)_argv, "device"))
-		cutilGLDeviceInit(_argc, _argv);
-	else
-		cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());	
-#endif
 	cudaGLSetGLDevice( 0 );
 }
 

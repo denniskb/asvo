@@ -1,7 +1,7 @@
 #include "../inc/expand_raster.h"
 
 #include <cuda_runtime.H>
-#include <cutil.h>
+#include <helper_cuda.h>
 
 #include "../inc/bfsinnernode.h"
 #include "../inc/bfsjob.h"
@@ -81,7 +81,7 @@ static __device__ BFSJob jobInit(unsigned long int index,
  * @param shadowPass  Determines whether the output of this pass is an image or a shadow map.
  */
 static __global__ void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuffer, float *shadowMap,
-                                    unsigned short int jobCount, BFSJob *jobs, CUTBoolean shadowPass);
+                                    unsigned short int jobCount, BFSJob *jobs, bool shadowPass);
 
 /**
  * The main kernel responsible for rendering. Equivalent to the rasterizer plus vertex shader.
@@ -164,15 +164,15 @@ static __global__ void drawShadowMap(unsigned int *depthBuffer, float *shadowMap
  * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
  */
 static __host__ void render(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer,
-                            Object3d obj, Camera cam, CUTBoolean shadowPass, float *shadowMap, Matrix lightWorldViewProjection);
+                            Object3d obj, Camera cam, bool shadowPass, float *shadowMap, Matrix lightWorldViewProjection);
 
 __host__ void expandRasterInit(void)
 {
-	unsigned short int windowWidth = glueGetWindowWidth(), windowHeight = glueGetWindowHeight();
-	unsigned long int windowResolution = glueGetWindowResolution();
-	cudaMemcpyToSymbol("_windowWidth", &windowWidth, sizeof(windowWidth));
-	cudaMemcpyToSymbol("_windowHeight", &windowHeight, sizeof(windowHeight));
-	cudaMemcpyToSymbol("_windowResolution", &windowResolution, sizeof(windowResolution));
+	int windowWidth = glueGetWindowWidth(), windowHeight = glueGetWindowHeight();
+	int windowResolution = glueGetWindowResolution();
+	cudaMemcpyToSymbol(_windowWidth, &windowWidth, sizeof(windowWidth));
+	cudaMemcpyToSymbol(_windowHeight, &windowHeight, sizeof(windowHeight));
+	cudaMemcpyToSymbol(_windowResolution, &windowResolution, sizeof(windowResolution));
 
 	_clearNumBlocks = glueGetWindowResolution() / CLEAR_COUNT + 1;
 	_drawNumBlocks = glueGetWindowResolution() / DRAW_COUNT + 1;
@@ -202,41 +202,41 @@ __host__ void expandRasterInvoke(unsigned int *depthBuffer, uchar4 *colorBuffer,
 								 Object3d obj, Camera cam, float *shadowMap, Matrix lightWorldViewProjection)
 {
 	unsigned short int frame = BFSOctreeUpdate(&obj.data);
-	cudaMemcpyToSymbol("_frame", &frame, sizeof(frame));
+	cudaMemcpyToSymbol(_frame, &frame, sizeof(frame));
 
 	cudaThreadSynchronize();
 	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
-		depthBuffer, colorBuffer, shadowMap, obj.data.jobCount, obj.data.d_jobs, CUTTrue
+		depthBuffer, colorBuffer, shadowMap, obj.data.jobCount, obj.data.d_jobs, true
 	);
 
 #ifdef SHADOW
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
 	_h_level = obj.data.level;
-	render(depthBuffer, colorBuffer, voxelBuffer, obj, lightGetCam(), CUTTrue, shadowMap, lightWorldViewProjection);
+	render(depthBuffer, colorBuffer, voxelBuffer, obj, lightGetCam(), true, shadowMap, lightWorldViewProjection);
 #endif
 
 	cudaThreadSynchronize();
 	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
-		depthBuffer, colorBuffer, shadowMap, obj.data.jobCount, obj.data.d_jobs, CUTFalse
+		depthBuffer, colorBuffer, shadowMap, obj.data.jobCount, obj.data.d_jobs, false
 	);
 
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
 	_h_level = obj.data.level;
-	render(depthBuffer, colorBuffer, voxelBuffer, obj, cam, CUTFalse, shadowMap, lightWorldViewProjection);
+	render(depthBuffer, colorBuffer, voxelBuffer, obj, cam, false, shadowMap, lightWorldViewProjection);
 }
 
 void render(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer,
-            Object3d obj, Camera cam, CUTBoolean shadowPass, float *shadowMap, Matrix lightWorldViewProjection)
+            Object3d obj, Camera cam, bool shadowPass, float *shadowMap, Matrix lightWorldViewProjection)
 {
 	cudaThreadSynchronize();
-	cudaMemcpyToSymbol("_travQueuePtr", &_h_endIndex, sizeof(_h_endIndex));
+	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
 	do
 	{		
-		cudaMemcpyToSymbol("_startIndex", &_h_startIndex, sizeof(_h_startIndex));
-		cudaMemcpyToSymbol("_endIndex", &_h_endIndex, sizeof(_h_endIndex));
-		cudaMemcpyToSymbol("_level", &_h_level, sizeof(_h_level));
+		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
+		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
+		cudaMemcpyToSymbol(_level, &_h_level, sizeof(_h_level));
 
 		traverse<<<(_h_endIndex - _h_startIndex) / TRAV_COUNT + 1, TRAV_COUNT>>>(
 			obj.data.innerNodeCount,
@@ -249,7 +249,7 @@ void render(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuff
 		);
 		
 		_h_startIndex = _h_endIndex;		
-		cudaMemcpyFromSymbol(&_h_endIndex, "_travQueuePtr", sizeof(_h_endIndex));		
+		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
 		++_h_level;
 	}
 	while (_h_endIndex - _h_startIndex > 0);
@@ -276,8 +276,8 @@ void render(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuff
 	cudaUnbindTexture(_depthBuffer);
 }
 
-void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuffer, float *shadowMap,
-                  unsigned short int jobCount, BFSJob *jobs, CUTBoolean shadowPass)
+__global__ void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuffer, float *shadowMap,
+                  unsigned short int jobCount, BFSJob *jobs, bool shadowPass)
 {
 	unsigned long int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -299,7 +299,7 @@ void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuffer, float *shadowM
 	}
 }
 
-void traverse(unsigned long int innerNodeCount,
+__global__ void traverse(unsigned long int innerNodeCount,
               BFSInnerNode *innerNodes,
               BFSLeaf *leaves,
               float dimension,
@@ -460,7 +460,7 @@ void traverse(unsigned long int innerNodeCount,
 	}
 }
 
-void draw(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer, float *shadowMap,
+__global__ void draw(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer, float *shadowMap,
           Vector3 light, Matrix lightWorldViewProjection, float diffusePower)
 {
 	unsigned long int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX_VALUE, depth;

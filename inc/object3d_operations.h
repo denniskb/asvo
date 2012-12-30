@@ -4,9 +4,10 @@
 
 #define object3d_operations_h
 
+#include <helper_cuda.h>
+
 #include "object3d.h"
 #include "bfsoctree.h"
-#include <cutil.h>
 #include "matrix.h"
 
 /**
@@ -18,7 +19,7 @@
  *
  * @return	A Object3d representing the provided BFSOctree.
  */
-Object3d obj3dInit(BFSOctree data, CUTBoolean rhsCoordinateSystem);
+Object3d obj3dInit(BFSOctree data, bool rhsCoordinateSystem);
 
 /**
  * Assigns a transformation matrix to a model.

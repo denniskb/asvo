@@ -1,13 +1,13 @@
 #include "../inc/object3d_operations.h"
 
-#include <cutil.h>
+#include <helper_cuda.h>
 
 #include "../inc/bfsoctree.h"
 #include "../inc/math3d.h"
 #include "../inc/matrix.h"
 #include "../inc/object3d.h"
 
-Object3d obj3dInit(BFSOctree data, CUTBoolean rhsCoordinateSystem)
+Object3d obj3dInit(BFSOctree data, bool rhsCoordinateSystem)
 {
 	Object3d result;
 	result.data = data;

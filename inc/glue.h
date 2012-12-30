@@ -7,8 +7,8 @@
 
 #define glue_h
 
-#include <cutil.h>
 #include <cuda_runtime.h>
+#include <helper_cuda.h>
 
 /**
  * Initializes the Glue module. Creates a window, OpenGL context,
@@ -25,14 +25,15 @@
  * @param runKernel    Callback-function that will be called by GLUT in order to
  *                     render an asvo into the provided color-buffer.
  *
- * @return CUTTrue if the initialization was successful, CUTFalse otherwise.
+ * @return true if the initialization was successful, false otherwise.
  */
-CUTBoolean glueInit(unsigned short int screenWidth,
-                    unsigned short int screenHeight,
-                    unsigned short int windowWidth,
-                    unsigned short int windowHeight,
-                    int argc, char **argv,
-                    void(*runKernel)(uchar4 *colorBuffer));
+bool glueInit
+(
+    unsigned short int windowWidth,
+    unsigned short int windowHeight,
+    int argc, char **argv,
+    void(*runKernel)(uchar4 *colorBuffer)
+);
 
 /**
  * Cleans up all initializations done in glueInit.

@@ -28,7 +28,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.2.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 5.0.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -42,16 +42,16 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(CUDA_INC_PATH);$(NVSDKCOMPUTE_ROOT)/C/common/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>cuda.lib;cudart.lib;freeglut.lib;glew64.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(NVSDKCOMPUTE_ROOT)/C/common/lib/x64;$(CUDA_PATH)/lib/x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NVCUDASAMPLES_ROOT)common\lib\x64;$(CUDA_PATH)lib\x64</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
     </Link>
     <CudaCompile>
-      <Include>$(CUDA_INC_PATH);$(NVSDKCOMPUTE_ROOT)/C/common/inc</Include>
+      <Include>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</Include>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
     </CudaCompile>
     <PostBuildEvent>
@@ -68,18 +68,18 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(CUDA_INC_PATH);$(NVSDKCOMPUTE_ROOT)/C/common/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>cuda.lib;cudart.lib;freeglut.lib;glew64.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(NVSDKCOMPUTE_ROOT)/C/common/lib/x64;$(CUDA_PATH)/lib/x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NVCUDASAMPLES_ROOT)common\lib\x64;$(CUDA_PATH)lib\x64</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
     </Link>
     <CudaCompile>
-      <Include>$(CUDA_INC_PATH);$(NVSDKCOMPUTE_ROOT)/C/common/inc</Include>
+      <Include>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</Include>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
     </CudaCompile>
     <PostBuildEvent>
@@ -134,6 +134,6 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.2.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 5.0.targets" />
   </ImportGroup>
 </Project>

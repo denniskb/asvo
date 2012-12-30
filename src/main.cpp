@@ -4,7 +4,7 @@
 
 #include <GL/freeglut.h>
 
-#include <cutil.h>
+#include <helper_cuda.h>
 
 #include "../inc/bfsoctree_operations.h"
 #include "../inc/camera_operations.h"
@@ -19,8 +19,10 @@
 int main(int argc, char **argv)
 {
 	// Initialize the GLUT framework.
-	if (!glueInit(1280, 1024, 550, 800, argc, argv, kernelRun))
-		return CUTFalse;
+	if (!glueInit(550, 800, argc, argv, kernelRun))
+	{
+		return 1;
+	}
 	
 	std::string path( argv[ 0 ] );
 	int lastSlash = path.find_last_of( "\\" );
@@ -35,7 +37,7 @@ int main(int argc, char **argv)
 		( path + "illum.raw" ).c_str(),
 		( path + "spec.raw" ).c_str(),
 		( path + "normal.raw" ).c_str()
-	), CUTTrue);
+	), true);
 	
 	Vector3 rotAxis = { 1.f, 0.f, 0.f };
 	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
@@ -62,5 +64,6 @@ int main(int argc, char **argv)
 	BFSOctreeCleanup(&imrod.data);
 	kernelCleanup();
 	glueCleanup();
-	return CUTTrue;
+
+	return 0;
 }
