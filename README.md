@@ -12,7 +12,7 @@ This is the high performance CUDA implementation (aka ASVO@CUDA) of the C# proto
 
 ## Dependencies
 
-- Windows 7 64bit
+- Windows 7 **64bit**
 - [CUDA 5](https://developer.nvidia.com/cuda-downloads)
 - CUDA capable GPU with Compute Capability 2.0 or higher, 1GB VRAM or more.
 - Visual Studio 2010
