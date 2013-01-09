@@ -34,7 +34,33 @@ public:
 
 private:
 
+	static int const nTHREADS_CLEAR_KERNEL = 192;
+	static int const nTHREADS_TRAV_KERNEL = 128;
+	static int const nTHREADS_DRAW_KERNEL = 128;
+	static int const nTHREADS_DRAW_SHADOW_KERNEL = 192;
+
 	unsigned int * m_pDepthBuffer;
 	VoxelData * m_pVoxelBuffer;
 	float * m_pShadowMap;
+
+	/**
+	 * Encapsulates the whole render process including clearBuffers, traverse and draw.
+	 * Manages the job queue and adjusts execution configurations of kernels to maximize performance.
+	 *
+	 * @param colorBuffer              The color buffer.
+	 * @param obj                      The model to be rendered.
+	 * @param cam                      The virtual camera.
+	 * @param shadowPass               Determines whether the output of this pass is an image or a shadow map.
+	 * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
+	 */
+	void render
+	(
+		uchar4 * colorBuffer,
+		Object3d obj,
+		Camera cam,
+		bool shadowPass,
+		Matrix lightWorldViewProjection
+	);
+
+	static int nBlocks( int nElements, int nThreadsPerBlock );
 };

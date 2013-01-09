@@ -14,14 +14,9 @@
  */
 #define SHADOW
 
-#define CLEAR_COUNT 192
-#define TRAV_COUNT 128
-#define DRAW_COUNT 128
-#define DRAW_SHADOW_COUNT 192
 #define QUEUE_LENGTH 10000000
 #define INT_MAX_VALUE 4294967295ul
 
-static int _clearNumBlocks, _drawNumBlocks, _drawShadowNumBlocks;
 static int _h_startIndex, _h_endIndex;
 static int _h_level;
 
@@ -499,78 +494,6 @@ static __global__ void drawShadowMap
 	}
 }
 
-/**
- * Encapsulates the whole render process including clearBuffers, traverse and draw.
- * Manages the job queue and adjusts execution configurations of kernels to maximize performance.
- *
- * @param depthBuffer              The depth buffer.
- * @param colorBuffer              The color buffer.
- * @param voxelBuffer              The voxel buffer.
- * @param obj                      The model to be rendered.
- * @param cam                      The virtual camera.
- * @param shadowPass               Determines whether the output of this pass is an image or a shadow map.
- * @param shadowMap                The shadow map.
- * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
- */
-static void render
-(
-	unsigned int * depthBuffer,
-	uchar4 * colorBuffer,
-	VoxelData * voxelBuffer,
-    Object3d obj,
-	Camera cam,
-	bool shadowPass,
-	float * shadowMap,
-	Matrix lightWorldViewProjection
-)
-{
-	cudaThreadSynchronize();
-	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
-
-	do
-	{		
-		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
-		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
-		cudaMemcpyToSymbol(_level, &_h_level, sizeof(_h_level));
-
-		traverse<<<(_h_endIndex - _h_startIndex) / TRAV_COUNT + 1, TRAV_COUNT>>>(
-			obj.data.innerNodeCount,
-			obj.data.d_innerNodes,
-			obj.data.d_leaves,
-			obj.data.dim,
-			obj.transform, cam.pos, cam.view, cam.projection,
-			obj.data.d_animation, obj.data.boneCount,
-			depthBuffer, voxelBuffer
-		);
-		
-		_h_startIndex = _h_endIndex;		
-		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
-		++_h_level;
-	}
-	while (_h_endIndex - _h_startIndex > 0);
-	
-	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) depthBuffer, _depthBufferDesc, (size_t) (glueGetWindowResolution() * sizeof(unsigned int)));
-	if (shadowPass)
-		drawShadowMap<<<_drawShadowNumBlocks, DRAW_SHADOW_COUNT>>>(depthBuffer, shadowMap, voxelBuffer);
-	else
-	{
-		cudaBindTextureToArray(_diffuse, obj.data.diffuse.data, _mapDesc);
-		cudaBindTextureToArray(_illum, obj.data.illum.data, _mapDesc);
-		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
-		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
-
-		draw<<<_drawNumBlocks, DRAW_COUNT>>>(
-			depthBuffer, colorBuffer, voxelBuffer, shadowMap, lightGetDir(), lightWorldViewProjection, lightGetDiffusePower()
-		);
-
-		cudaUnbindTexture(_diffuse);
-		cudaUnbindTexture(_illum);
-		cudaUnbindTexture(_spec);
-		cudaUnbindTexture(_normal);
-	}
-	cudaUnbindTexture(_depthBuffer);
-}
-
 void Rasterizer::init()
 {
 	cudaMalloc( & m_pDepthBuffer, glueGetWindowResolution() * sizeof( unsigned int ) );
@@ -582,10 +505,6 @@ void Rasterizer::init()
 	cudaMemcpyToSymbol(_windowWidth, &windowWidth, sizeof(windowWidth));
 	cudaMemcpyToSymbol(_windowHeight, &windowHeight, sizeof(windowHeight));
 	cudaMemcpyToSymbol(_windowResolution, &windowResolution, sizeof(windowResolution));
-
-	_clearNumBlocks = glueGetWindowResolution() / CLEAR_COUNT + 1;
-	_drawNumBlocks = glueGetWindowResolution() / DRAW_COUNT + 1;
-	_drawShadowNumBlocks = glueGetWindowResolution() / DRAW_SHADOW_COUNT + 1;
 
 	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
 
@@ -631,24 +550,118 @@ void Rasterizer::rasterize
 	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
 
 	cudaThreadSynchronize();
-	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
-		m_pDepthBuffer, colorBuffer, m_pShadowMap, obj.data.jobCount, obj.data.d_jobs, true
+	clearBuffers<<< nBlocks( glueGetWindowResolution(), nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+	(
+		m_pDepthBuffer,
+		colorBuffer,
+		m_pShadowMap,
+		obj.data.jobCount,
+		obj.data.d_jobs,
+		true
 	);
 
 #ifdef SHADOW
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
 	_h_level = obj.data.level;
-	render( m_pDepthBuffer, colorBuffer, m_pVoxelBuffer, obj, lightGetCam(), true, m_pShadowMap, lightWorldViewProjection );
+	render( colorBuffer, obj, lightGetCam(), true, lightWorldViewProjection );
 #endif
 
 	cudaThreadSynchronize();
-	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
-		m_pDepthBuffer, colorBuffer, m_pShadowMap, obj.data.jobCount, obj.data.d_jobs, false
+	clearBuffers<<< nBlocks( glueGetWindowResolution(), nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+	(
+		m_pDepthBuffer,
+		colorBuffer, 
+		m_pShadowMap, 
+		obj.data.jobCount, 
+		obj.data.d_jobs, 
+		false
 	);
 
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
 	_h_level = obj.data.level;
-	render( m_pDepthBuffer, colorBuffer, m_pVoxelBuffer, obj, cam, false, m_pShadowMap, lightWorldViewProjection );
+	render( colorBuffer, obj, cam, false, lightWorldViewProjection );
+}
+
+
+
+void Rasterizer::render
+(
+	uchar4 * colorBuffer,
+    Object3d obj,
+	Camera cam,
+	bool shadowPass,
+	Matrix lightWorldViewProjection
+)
+{
+	cudaThreadSynchronize();
+	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
+
+	do
+	{		
+		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
+		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
+		cudaMemcpyToSymbol(_level, &_h_level, sizeof(_h_level));
+
+		traverse<<< nBlocks( _h_endIndex - _h_startIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
+		(
+			obj.data.innerNodeCount,
+			obj.data.d_innerNodes,
+			obj.data.d_leaves,
+			obj.data.dim,
+			obj.transform, cam.pos, cam.view, cam.projection,
+			obj.data.d_animation, obj.data.boneCount,
+			m_pDepthBuffer, m_pVoxelBuffer
+		);
+		
+		_h_startIndex = _h_endIndex;		
+		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
+		++_h_level;
+	}
+	while (_h_endIndex - _h_startIndex > 0);
+	
+	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) m_pDepthBuffer, _depthBufferDesc, (size_t) (glueGetWindowResolution() * sizeof(unsigned int)));
+	if (shadowPass)
+	{
+		drawShadowMap<<< nBlocks( glueGetWindowResolution(), nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
+		(
+			m_pDepthBuffer, 
+			m_pShadowMap, 
+			m_pVoxelBuffer
+		);
+	}
+	else
+	{
+		cudaBindTextureToArray(_diffuse, obj.data.diffuse.data, _mapDesc);
+		cudaBindTextureToArray(_illum, obj.data.illum.data, _mapDesc);
+		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
+		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
+
+		draw<<< nBlocks( glueGetWindowResolution(), Rasterizer::nTHREADS_DRAW_KERNEL ), Rasterizer::nTHREADS_DRAW_KERNEL >>>
+		(
+			m_pDepthBuffer,
+			colorBuffer,
+			m_pVoxelBuffer,
+			m_pShadowMap,
+			lightGetDir(),
+			lightWorldViewProjection,
+			lightGetDiffusePower()
+		);
+
+		cudaUnbindTexture( _diffuse );
+		cudaUnbindTexture( _illum );
+		cudaUnbindTexture( _spec );
+		cudaUnbindTexture( _normal );
+	}
+	cudaUnbindTexture( _depthBuffer );
+}
+
+
+
+// static
+int Rasterizer::nBlocks( int nElements, int nThreadsPerBlock )
+{
+	int result = nElements / nThreadsPerBlock;
+	return result + ( result * nThreadsPerBlock < nElements );
 }
