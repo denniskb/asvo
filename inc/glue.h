@@ -10,6 +10,10 @@
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
 
+#include "object3d.h"
+
+class Rasterizer;
+
 /**
  * Initializes the Glue module. Creates a window, OpenGL context,
  * initializes cuda etc.
@@ -32,7 +36,8 @@ bool glueInit
     unsigned short int windowWidth,
     unsigned short int windowHeight,
     int argc, char **argv,
-    void(*runKernel)(uchar4 *colorBuffer)
+    Rasterizer * pRasterizer,
+	Object3d obj
 );
 
 /**

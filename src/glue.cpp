@@ -12,6 +12,10 @@
 #include <helper_cuda.h>
 
 #include "../inc/camera_operations.h"
+#include "../inc/light.h"
+#include "../inc/Rasterizer.h"
+
+class Rasterizer;
 
 static int _argc;
 static char **_argv;
@@ -20,7 +24,8 @@ static unsigned short int _windowHeight;
 static double _msFrameTime = 33;
 static GLuint _pbo;
 static GLuint _texture;
-static void(*_runKernel)(uchar4 *colorBuffer);
+static Rasterizer * _pRasterizer;
+static Object3d _obj;
 
 /*
  * Creates a window and sets up the viewport.
@@ -69,16 +74,18 @@ static void deleteTexture(void);
 bool glueInit
 (
 	unsigned short int windowWidth,
-	unsigned short int windowHeight,
-	int argc, char **argv,
-	void(*runKernel)(uchar4 *colorBuffer)
+    unsigned short int windowHeight,
+    int argc, char **argv,
+    Rasterizer * pRasterizer,
+	Object3d obj
 )
 {
 	_argc = argc;
 	_argv = argv;
 	_windowWidth = windowWidth;
 	_windowHeight = windowHeight;
-	_runKernel = runKernel;
+	_pRasterizer = pRasterizer;
+	_obj = obj;
 
 	if (!initGL())
 		return false;
@@ -177,9 +184,9 @@ static void displayFuncDummy(void)
 	cudaGLMapBufferObject((void**)&dptr, _pbo);
 
 	// execute the kernel
-	if (_runKernel != NULL)
+	if( _pRasterizer )
 	{
-		_runKernel(dptr);
+		_pRasterizer->rasterize( dptr, _obj, camGet(), lightGetCam().viewProjection );
 	}
 
 	// unmap buffer object

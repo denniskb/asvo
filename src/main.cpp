@@ -1,5 +1,6 @@
 #include <Windows.h>
 
+#include <memory>
 #include <string>
 
 #include <GL/freeglut.h>
@@ -9,21 +10,15 @@
 #include "../inc/bfsoctree_operations.h"
 #include "../inc/camera_operations.h"
 #include "../inc/glue.h"
-#include "../inc/kernel_caller.h"
 #include "../inc/light.h"
 #include "../inc/math3d.h"
 #include "../inc/object3d.h"
 #include "../inc/object3d_operations.h"
+#include "../inc/Rasterizer.h"
 #include "../inc/vector3.h"
 
 int main(int argc, char **argv)
-{
-	// Initialize the GLUT framework.
-	if (!glueInit(550, 800, argc, argv, kernelRun))
-	{
-		return 1;
-	}
-	
+{	
 	std::string path( argv[ 0 ] );
 	int lastSlash = path.find_last_of( "\\" );
 	path.resize( lastSlash + 1 );
@@ -38,11 +33,21 @@ int main(int argc, char **argv)
 		( path + "spec.raw" ).c_str(),
 		( path + "normal.raw" ).c_str()
 	), true);
-	
+
 	Vector3 rotAxis = { 1.f, 0.f, 0.f };
 	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
 	// Copy the model to device memory.
 	BFSOctreeCopyToDevice(&imrod.data);
+
+	std::unique_ptr< Rasterizer > pRasterizer( new Rasterizer );
+
+	// Initialize the GLUT framework.
+	if (!glueInit(550, 800, argc, argv, pRasterizer.get(), imrod))
+	{
+		return 1;
+	}
+
+	pRasterizer->init();
 
 	// Set up the camera.
 	Vector3 pos = { 0.f, 25.f, -100.f };
@@ -52,17 +57,13 @@ int main(int argc, char **argv)
 
 	// Set up the light.
 	Vector3 light = { -1.f, -0.5f, 0.5f };
-	lightSet(light, 0.8f);
-
-	// Set which model to render (only one supported at the moment).
-	kernelSetParams(imrod);	
+	lightSet(light, 0.8f);	
 
 	// Start the main render-and-update loop
 	glutMainLoop();	
 
 	// Do cleanup work.
 	BFSOctreeCleanup(&imrod.data);
-	kernelCleanup();
 	glueCleanup();
 
 	return 0;

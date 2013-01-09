@@ -1,20 +1,13 @@
-#include "../inc/expand_raster.h"
+#include "../inc/Rasterizer.h"
 
-#include <cuda_runtime.H>
-#include <helper_cuda.h>
-
-#include "../inc/bfsinnernode.h"
-#include "../inc/bfsjob.h"
-#include "../inc/bfsleaf.h"
 #include "../inc/bfsoctree_operations.h"
-#include "../inc/camera.h"
 #include "../inc/glue.h"
 #include "../inc/light.h"
-#include "../inc/math3d.h"
-#include "../inc/matrix.h"
-#include "../inc/object3d.h"
-#include "../inc/vector3.h"
-#include "../inc/voxeldata.h"
+
+// Include the implementations of all math functions.
+// CUDA requires that function declarations and definitions are
+// in the same .cu file.
+#include "math3d.cpp"
 
 /**
  * If SHADOW is defined, shadows are rendered using a shadow map.
@@ -51,6 +44,18 @@ static texture<uchar4, 2, cudaReadModeNormalizedFloat> _spec;
 static texture<uchar4, 2, cudaReadModeNormalizedFloat> _normal;
 static cudaChannelFormatDesc _mapDesc;
 
+unsigned long int d_getChildCountFromMask( unsigned long int mask )
+{
+    return (   1ul & mask ) +
+          ((   2ul & mask ) >> 1 ) +
+          ((   4ul & mask ) >> 2 ) +
+          ((   8ul & mask ) >> 3 ) +
+          ((  16ul & mask ) >> 4 ) +
+          ((  32ul & mask ) >> 5 ) +
+          ((  64ul & mask ) >> 6 ) +
+          (( 128ul & mask ) >> 7 );
+}
+
 /**
  * Initializes a BFSJob.
  *
@@ -62,10 +67,17 @@ static cudaChannelFormatDesc _mapDesc;
  * @return A BFSJob representing the specified voxel that can
  *         be processed by the GPU.
  */
-static __device__ BFSJob jobInit(unsigned long int index,
-                                 unsigned short int x,
-                                 unsigned short int y,
-                                 unsigned short int z);
+static __device__ BFSJob jobInit
+(
+	unsigned long int index,
+    unsigned short int x,
+    unsigned short int y,
+    unsigned short int z
+)
+{
+	BFSJob result = { index, x, y, z };
+	return result;
+}
 
 /**
  * Clears all buffers before rendering a new frame.
@@ -80,8 +92,35 @@ static __device__ BFSJob jobInit(unsigned long int index,
  * @param jobs        The job queue residing in device memory.
  * @param shadowPass  Determines whether the output of this pass is an image or a shadow map.
  */
-static __global__ void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuffer, float *shadowMap,
-                                    unsigned short int jobCount, BFSJob *jobs, bool shadowPass);
+static __global__ void clearBuffers
+(
+	unsigned int * depthBuffer,
+	uchar4 * colorBuffer,
+	float * shadowMap,
+    unsigned short int jobCount,
+	BFSJob * jobs,
+	bool shadowPass
+)
+{
+	unsigned long int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if (threadIndex < _windowResolution)
+	{
+		if (shadowPass)
+		{
+			depthBuffer[threadIndex] = INT_MAX_VALUE;
+			colorBuffer[threadIndex] = make_uchar4(51, 51, 51, 0);
+			shadowMap[threadIndex] = 1.f;
+		}
+		else
+			depthBuffer[threadIndex] = INT_MAX_VALUE;
+
+		if (threadIndex < jobCount)
+		{
+			_queue[threadIndex] = jobs[threadIndex];
+		}
+	}
+}
 
 /**
  * The main kernel responsible for rendering. Equivalent to the rasterizer plus vertex shader.
@@ -111,201 +150,16 @@ static __global__ void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuff
  * @param depthBuffer    The depth buffer.
  * @param voxelBuffer    The voxel buffer (think input to the pixel/fragment shader).
  */
-static __global__ void traverse(unsigned long int innerNodeCount,
-                                BFSInnerNode *innerNodes,
-                                BFSLeaf *leaves,
-                                float dimension,
-                                Matrix world, Vector3 camPos, Matrix view, Matrix projection,
-                                Matrix *animation, unsigned char boneCount,
-                                unsigned int *depthBuffer, VoxelData *voxelBuffer);
-
-/**
- * Draws an image of a rendered voxel model to the screen. For every pixel p visible
- * on the screen it scans a certain number of neighboring pixels in the depth map for a voxel and
- * selects the nearest voxel that covers p.
- *
- * This function could be easily implemented in the form of a shader by
- * storing the voxel data in a set of textures (one for every voxel property like
- * normals, texCoords, etc.) and send them to the GPU, which could combine this data with
- * triangle meshes (since one can output depth information in pixel/fragment shaders).
- *
- * @param depthBuffer              The depth buffer.
- * @param colorBuffer              The color buffer.
- * @param voxelBuffer              The voxel buffer.
- * @param shadowMap                The shadow map.
- * @param light                    The light direction.
- * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
- * @param diffusPower              The diffuse intensity of the light source.
- */
-static __global__ void draw(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer, float *shadowMap,
-                            Vector3 light, Matrix lightWorldViewProjection, float diffusePower);
-
-/**
- * @see draw
- * Like draw but outputs a shadow map.
- *
- * @param depthBuffer The depth buffer.
- * @param shadowMap   The shadow map to output the data to.
- * @param voxelBuffer The voxel buffer.
- */
-static __global__ void drawShadowMap(unsigned int *depthBuffer, float *shadowMap, VoxelData *voxelBuffer);
-
-/**
- * Encapsulates the whole render process including clearBuffers, traverse and draw.
- * Manages the job queue and adjusts execution configurations of kernels to maximize performance.
- *
- * @param depthBuffer              The depth buffer.
- * @param colorBuffer              The color buffer.
- * @param voxelBuffer              The voxel buffer.
- * @param obj                      The model to be rendered.
- * @param cam                      The virtual camera.
- * @param shadowPass               Determines whether the output of this pass is an image or a shadow map.
- * @param shadowMap                The shadow map.
- * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
- */
-static __host__ void render(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer,
-                            Object3d obj, Camera cam, bool shadowPass, float *shadowMap, Matrix lightWorldViewProjection);
-
-__host__ void expandRasterInit(void)
-{
-	int windowWidth = glueGetWindowWidth(), windowHeight = glueGetWindowHeight();
-	int windowResolution = glueGetWindowResolution();
-	cudaMemcpyToSymbol(_windowWidth, &windowWidth, sizeof(windowWidth));
-	cudaMemcpyToSymbol(_windowHeight, &windowHeight, sizeof(windowHeight));
-	cudaMemcpyToSymbol(_windowResolution, &windowResolution, sizeof(windowResolution));
-
-	_clearNumBlocks = glueGetWindowResolution() / CLEAR_COUNT + 1;
-	_drawNumBlocks = glueGetWindowResolution() / DRAW_COUNT + 1;
-	_drawShadowNumBlocks = glueGetWindowResolution() / DRAW_SHADOW_COUNT + 1;
-
-	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
-
-	_mapDesc = cudaCreateChannelDesc<uchar4>();
-	_diffuse.normalized = true;
-	_diffuse.filterMode = cudaFilterModeLinear;
-	_diffuse.addressMode[0] = _diffuse.addressMode[1] = cudaAddressModeWrap;
-
-	_illum.normalized = true;
-	_illum.filterMode = cudaFilterModeLinear;
-	_illum.addressMode[0] = _illum.addressMode[1] = cudaAddressModeWrap;
-
-	_spec.normalized = true;
-	_spec.filterMode = cudaFilterModeLinear;
-	_spec.addressMode[0] = _spec.addressMode[1] = cudaAddressModeWrap;
-
-	_normal.normalized = true;
-	_normal.filterMode = cudaFilterModeLinear;
-	_normal.addressMode[0] = _normal.addressMode[1] = cudaAddressModeWrap;
-}
-
-__host__ void expandRasterInvoke(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer,
-								 Object3d obj, Camera cam, float *shadowMap, Matrix lightWorldViewProjection)
-{
-	int frame = BFSOctreeUpdate(&obj.data);
-	cudaMemcpyToSymbol(_frame, &frame, sizeof(frame));
-
-	cudaThreadSynchronize();
-	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
-		depthBuffer, colorBuffer, shadowMap, obj.data.jobCount, obj.data.d_jobs, true
-	);
-
-#ifdef SHADOW
-	_h_startIndex = 0;
-	_h_endIndex = obj.data.jobCount;
-	_h_level = obj.data.level;
-	render(depthBuffer, colorBuffer, voxelBuffer, obj, lightGetCam(), true, shadowMap, lightWorldViewProjection);
-#endif
-
-	cudaThreadSynchronize();
-	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
-		depthBuffer, colorBuffer, shadowMap, obj.data.jobCount, obj.data.d_jobs, false
-	);
-
-	_h_startIndex = 0;
-	_h_endIndex = obj.data.jobCount;
-	_h_level = obj.data.level;
-	render(depthBuffer, colorBuffer, voxelBuffer, obj, cam, false, shadowMap, lightWorldViewProjection);
-}
-
-void render(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer,
-            Object3d obj, Camera cam, bool shadowPass, float *shadowMap, Matrix lightWorldViewProjection)
-{
-	cudaThreadSynchronize();
-	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
-	do
-	{		
-		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
-		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
-		cudaMemcpyToSymbol(_level, &_h_level, sizeof(_h_level));
-
-		traverse<<<(_h_endIndex - _h_startIndex) / TRAV_COUNT + 1, TRAV_COUNT>>>(
-			obj.data.innerNodeCount,
-			obj.data.d_innerNodes,
-			obj.data.d_leaves,
-			obj.data.dim,
-			obj.transform, cam.pos, cam.view, cam.projection,
-			obj.data.d_animation, obj.data.boneCount,
-			depthBuffer, voxelBuffer
-		);
-		
-		_h_startIndex = _h_endIndex;		
-		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
-		++_h_level;
-	}
-	while (_h_endIndex - _h_startIndex > 0);
-	
-	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) depthBuffer, _depthBufferDesc, (size_t) (glueGetWindowResolution() * sizeof(unsigned int)));
-	if (shadowPass)
-		drawShadowMap<<<_drawShadowNumBlocks, DRAW_SHADOW_COUNT>>>(depthBuffer, shadowMap, voxelBuffer);
-	else
-	{
-		cudaBindTextureToArray(_diffuse, obj.data.diffuse.data, _mapDesc);
-		cudaBindTextureToArray(_illum, obj.data.illum.data, _mapDesc);
-		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
-		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
-
-		draw<<<_drawNumBlocks, DRAW_COUNT>>>(
-			depthBuffer, colorBuffer, voxelBuffer, shadowMap, lightGetDir(), lightWorldViewProjection, lightGetDiffusePower()
-		);
-
-		cudaUnbindTexture(_diffuse);
-		cudaUnbindTexture(_illum);
-		cudaUnbindTexture(_spec);
-		cudaUnbindTexture(_normal);
-	}
-	cudaUnbindTexture(_depthBuffer);
-}
-
-__global__ void clearBuffers(unsigned int *depthBuffer, uchar4 *colorBuffer, float *shadowMap,
-                  unsigned short int jobCount, BFSJob *jobs, bool shadowPass)
-{
-	unsigned long int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
-
-	if (threadIndex < _windowResolution)
-	{
-		if (shadowPass)
-		{
-			depthBuffer[threadIndex] = INT_MAX_VALUE;
-			colorBuffer[threadIndex] = make_uchar4(51, 51, 51, 0);
-			shadowMap[threadIndex] = 1.f;
-		}
-		else
-			depthBuffer[threadIndex] = INT_MAX_VALUE;
-
-		if (threadIndex < jobCount)
-		{
-			_queue[threadIndex] = jobs[threadIndex];
-		}
-	}
-}
-
-__global__ void traverse(unsigned long int innerNodeCount,
-              BFSInnerNode *innerNodes,
-              BFSLeaf *leaves,
-              float dimension,
-              Matrix world, Vector3 camPos, Matrix view, Matrix projection,
-              Matrix *animation, unsigned char boneCount,
-              unsigned int *depthBuffer, VoxelData *voxelBuffer)
+static __global__ void traverse
+(
+	unsigned long int innerNodeCount,
+    BFSInnerNode * innerNodes,
+    BFSLeaf * leaves,
+    float dimension,
+    Matrix world, Vector3 camPos, Matrix view, Matrix projection,
+    Matrix * animation, unsigned char boneCount,
+    unsigned int * depthBuffer, VoxelData * voxelBuffer
+)
 {
 	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + _startIndex;	
 	short int x, y, z, w = 2;
@@ -460,8 +314,35 @@ __global__ void traverse(unsigned long int innerNodeCount,
 	}
 }
 
-__global__ void draw(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *voxelBuffer, float *shadowMap,
-          Vector3 light, Matrix lightWorldViewProjection, float diffusePower)
+/**
+ * Draws an image of a rendered voxel model to the screen. For every pixel p visible
+ * on the screen it scans a certain number of neighboring pixels in the depth map for a voxel and
+ * selects the nearest voxel that covers p.
+ *
+ * This function could be easily implemented in the form of a shader by
+ * storing the voxel data in a set of textures (one for every voxel property like
+ * normals, texCoords, etc.) and send them to the GPU, which could combine this data with
+ * triangle meshes (since one can output depth information in pixel/fragment shaders).
+ *
+ * @param depthBuffer              The depth buffer.
+ * @param colorBuffer              The color buffer.
+ * @param voxelBuffer              The voxel buffer.
+ * @param shadowMap                The shadow map.
+ * @param light                    The light direction.
+ * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
+ * @param diffusPower              The diffuse intensity of the light source.
+ */
+static __global__ void draw
+(
+	unsigned int * depthBuffer,
+	uchar4 * colorBuffer,
+	VoxelData * voxelBuffer,
+	float * shadowMap,
+
+    Vector3 light,
+	Matrix lightWorldViewProjection,
+	float diffusePower
+)
 {
 	unsigned long int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX_VALUE, depth;
 	int startIndex, curIndex, x, y;
@@ -564,7 +445,20 @@ __global__ void draw(unsigned int *depthBuffer, uchar4 *colorBuffer, VoxelData *
 	}
 }
 
-static __global__ void drawShadowMap(unsigned int *depthBuffer, float *shadowMap, VoxelData *voxelBuffer)
+/**
+ * @see draw
+ * Like draw but outputs a shadow map.
+ *
+ * @param depthBuffer The depth buffer.
+ * @param shadowMap   The shadow map to output the data to.
+ * @param voxelBuffer The voxel buffer.
+ */
+static __global__ void drawShadowMap
+(
+	unsigned int * depthBuffer,
+	float * shadowMap,
+	VoxelData * voxelBuffer
+)
 {
 	unsigned long int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX_VALUE, depth;
 	int startIndex, curIndex, x, y;
@@ -605,28 +499,156 @@ static __global__ void drawShadowMap(unsigned int *depthBuffer, float *shadowMap
 	}
 }
 
-BFSJob jobInit(unsigned long int index,
-               unsigned short int x,
-               unsigned short int y,
-               unsigned short int z)
+/**
+ * Encapsulates the whole render process including clearBuffers, traverse and draw.
+ * Manages the job queue and adjusts execution configurations of kernels to maximize performance.
+ *
+ * @param depthBuffer              The depth buffer.
+ * @param colorBuffer              The color buffer.
+ * @param voxelBuffer              The voxel buffer.
+ * @param obj                      The model to be rendered.
+ * @param cam                      The virtual camera.
+ * @param shadowPass               Determines whether the output of this pass is an image or a shadow map.
+ * @param shadowMap                The shadow map.
+ * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
+ */
+static void render
+(
+	unsigned int * depthBuffer,
+	uchar4 * colorBuffer,
+	VoxelData * voxelBuffer,
+    Object3d obj,
+	Camera cam,
+	bool shadowPass,
+	float * shadowMap,
+	Matrix lightWorldViewProjection
+)
 {
-	BFSJob result = { index, x, y, z };
-	return result;
+	cudaThreadSynchronize();
+	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
+
+	do
+	{		
+		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
+		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
+		cudaMemcpyToSymbol(_level, &_h_level, sizeof(_h_level));
+
+		traverse<<<(_h_endIndex - _h_startIndex) / TRAV_COUNT + 1, TRAV_COUNT>>>(
+			obj.data.innerNodeCount,
+			obj.data.d_innerNodes,
+			obj.data.d_leaves,
+			obj.data.dim,
+			obj.transform, cam.pos, cam.view, cam.projection,
+			obj.data.d_animation, obj.data.boneCount,
+			depthBuffer, voxelBuffer
+		);
+		
+		_h_startIndex = _h_endIndex;		
+		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
+		++_h_level;
+	}
+	while (_h_endIndex - _h_startIndex > 0);
+	
+	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) depthBuffer, _depthBufferDesc, (size_t) (glueGetWindowResolution() * sizeof(unsigned int)));
+	if (shadowPass)
+		drawShadowMap<<<_drawShadowNumBlocks, DRAW_SHADOW_COUNT>>>(depthBuffer, shadowMap, voxelBuffer);
+	else
+	{
+		cudaBindTextureToArray(_diffuse, obj.data.diffuse.data, _mapDesc);
+		cudaBindTextureToArray(_illum, obj.data.illum.data, _mapDesc);
+		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
+		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
+
+		draw<<<_drawNumBlocks, DRAW_COUNT>>>(
+			depthBuffer, colorBuffer, voxelBuffer, shadowMap, lightGetDir(), lightWorldViewProjection, lightGetDiffusePower()
+		);
+
+		cudaUnbindTexture(_diffuse);
+		cudaUnbindTexture(_illum);
+		cudaUnbindTexture(_spec);
+		cudaUnbindTexture(_normal);
+	}
+	cudaUnbindTexture(_depthBuffer);
 }
 
-unsigned long int d_getChildCountFromMask(unsigned long int mask)
+void Rasterizer::init()
 {
-    return (1ul & mask) +
-          ((2ul & mask) >> 1) +
-          ((4ul & mask) >> 2) +
-          ((8ul & mask) >> 3) +
-          ((16ul & mask) >> 4) +
-          ((32ul & mask) >> 5) +
-          ((64ul & mask) >> 6) +
-          ((128ul & mask) >> 7);
+	cudaMalloc( & m_pDepthBuffer, glueGetWindowResolution() * sizeof( unsigned int ) );
+	cudaMalloc( & m_pVoxelBuffer, glueGetWindowResolution() * sizeof( VoxelData ) );
+	cudaMalloc( & m_pShadowMap, glueGetWindowResolution() * sizeof( float ) );
+
+	int windowWidth = glueGetWindowWidth(), windowHeight = glueGetWindowHeight();
+	int windowResolution = glueGetWindowResolution();
+	cudaMemcpyToSymbol(_windowWidth, &windowWidth, sizeof(windowWidth));
+	cudaMemcpyToSymbol(_windowHeight, &windowHeight, sizeof(windowHeight));
+	cudaMemcpyToSymbol(_windowResolution, &windowResolution, sizeof(windowResolution));
+
+	_clearNumBlocks = glueGetWindowResolution() / CLEAR_COUNT + 1;
+	_drawNumBlocks = glueGetWindowResolution() / DRAW_COUNT + 1;
+	_drawShadowNumBlocks = glueGetWindowResolution() / DRAW_SHADOW_COUNT + 1;
+
+	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
+
+	_mapDesc = cudaCreateChannelDesc<uchar4>();
+	_diffuse.normalized = true;
+	_diffuse.filterMode = cudaFilterModeLinear;
+	_diffuse.addressMode[0] = _diffuse.addressMode[1] = cudaAddressModeWrap;
+
+	_illum.normalized = true;
+	_illum.filterMode = cudaFilterModeLinear;
+	_illum.addressMode[0] = _illum.addressMode[1] = cudaAddressModeWrap;
+
+	_spec.normalized = true;
+	_spec.filterMode = cudaFilterModeLinear;
+	_spec.addressMode[0] = _spec.addressMode[1] = cudaAddressModeWrap;
+
+	_normal.normalized = true;
+	_normal.filterMode = cudaFilterModeLinear;
+	_normal.addressMode[0] = _normal.addressMode[1] = cudaAddressModeWrap;
 }
 
-// Include the implementations of all math functions.
-// CUDA requires that function declarations and definitions are
-// in the same .cu file.
-#include "math3d.cpp"
+Rasterizer::~Rasterizer()
+{
+	if( m_pDepthBuffer )
+	{
+		cudaFree( m_pDepthBuffer );
+		cudaFree( m_pVoxelBuffer );
+		cudaFree( m_pShadowMap );
+	}
+}
+
+
+
+void Rasterizer::rasterize
+(
+	uchar4 * colorBuffer,
+	Object3d obj,
+	Camera cam,
+	Matrix lightWorldViewProjection
+)
+{
+	int frame = BFSOctreeUpdate(&obj.data);
+	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
+
+	cudaThreadSynchronize();
+	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
+		m_pDepthBuffer, colorBuffer, m_pShadowMap, obj.data.jobCount, obj.data.d_jobs, true
+	);
+
+#ifdef SHADOW
+	_h_startIndex = 0;
+	_h_endIndex = obj.data.jobCount;
+	_h_level = obj.data.level;
+	render( m_pDepthBuffer, colorBuffer, m_pVoxelBuffer, obj, lightGetCam(), true, m_pShadowMap, lightWorldViewProjection );
+#endif
+
+	cudaThreadSynchronize();
+	clearBuffers<<<_clearNumBlocks, CLEAR_COUNT>>>(
+		m_pDepthBuffer, colorBuffer, m_pShadowMap, obj.data.jobCount, obj.data.d_jobs, false
+	);
+
+	_h_startIndex = 0;
+	_h_endIndex = obj.data.jobCount;
+	_h_level = obj.data.level;
+	render( m_pDepthBuffer, colorBuffer, m_pVoxelBuffer, obj, cam, false, m_pShadowMap, lightWorldViewProjection );
+}

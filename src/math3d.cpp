@@ -4,7 +4,7 @@
 #include "../inc/util.h"
 #include "../inc/vector3.h"
 
-#ifndef CUDA
+#ifndef __CUDACC__
 #include <math.h>
 #endif
 
