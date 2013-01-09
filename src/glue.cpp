@@ -186,15 +186,10 @@ static void displayFuncDummy(void)
 	// execute the kernel
 	if( _pRasterizer )
 	{
-		// TODO: Replace hard-coded value
-		bool shadowMapping = true;
 		_pRasterizer->rasterize
 		(
 			_obj,
 			camGet(),
-			glueGetWindowWidth(), glueGetWindowHeight(),
-			
-			shadowMapping,
 			
 			dptr
 		);

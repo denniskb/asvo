@@ -490,7 +490,10 @@ static __global__ void drawShadowMap
 	}
 }
 
-void Rasterizer::init( int frameWidthInPixels, int frameHeightInPixels )
+Rasterizer::Rasterizer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping ) :
+	m_frameWidthInPixels( frameWidthInPixels ),
+	m_frameHeightInPixels( frameHeightInPixels ),
+	m_shadowMapping( shadowMapping )
 {
 	int frameResolution = frameWidthInPixels * frameHeightInPixels;
 
@@ -534,14 +537,11 @@ void Rasterizer::rasterize
 (
 	Object3d & obj,
 	Camera const & cam,
-	int frameWidthInPixels, int frameHeightInPixels,
 
-	bool shadowMapping,
-		
 	uchar4 * outColorBuffer
 )
 {
-	int frameResolution = frameWidthInPixels * frameHeightInPixels;
+	int frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
 
 	int frame = BFSOctreeUpdate(&obj.data);
 	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
@@ -552,13 +552,13 @@ void Rasterizer::rasterize
 		m_pDepthBuffer,
 		outColorBuffer,
 		m_pShadowMap,
-		frameWidthInPixels, frameHeightInPixels,
+		m_frameWidthInPixels, m_frameHeightInPixels,
 		obj.data.jobCount,
 		obj.data.d_jobs,
 		true
 	);
 
-	if( shadowMapping )
+	if( m_shadowMapping )
 	{
 		_h_startIndex = 0;
 		_h_endIndex = obj.data.jobCount;
@@ -567,7 +567,6 @@ void Rasterizer::rasterize
 		( 
 			obj, 
 			lightGetCam(),
-			frameWidthInPixels, frameHeightInPixels,
 		
 			true,
 
@@ -581,7 +580,7 @@ void Rasterizer::rasterize
 		m_pDepthBuffer,
 		outColorBuffer, 
 		m_pShadowMap, 
-		frameWidthInPixels, frameHeightInPixels,
+		m_frameWidthInPixels, m_frameHeightInPixels,
 		obj.data.jobCount, 
 		obj.data.d_jobs, 
 		false
@@ -594,7 +593,6 @@ void Rasterizer::rasterize
 	( 
 		obj, 
 		cam,
-		frameWidthInPixels, frameHeightInPixels,
 		
 		false,
 
@@ -608,14 +606,13 @@ void Rasterizer::render
 (
 	Object3d const & obj,
 	Camera const & cam,
-	int frameWidthInPixels, int frameHeightInPixels,
 
 	bool shadowPass,
 		
 	uchar4 * outColorBuffer
 )
 {
-	int frameResolution = frameWidthInPixels * frameHeightInPixels;
+	int frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
 
 	cudaThreadSynchronize();
 	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
@@ -635,7 +632,7 @@ void Rasterizer::render
 			obj.transform, cam.pos, cam.view, cam.projection,
 			obj.data.d_animation, obj.data.boneCount,
 			m_pDepthBuffer, m_pVoxelBuffer,
-			frameWidthInPixels, frameHeightInPixels
+			m_frameWidthInPixels, m_frameHeightInPixels
 		);
 		
 		_h_startIndex = _h_endIndex;		
@@ -652,7 +649,7 @@ void Rasterizer::render
 			m_pDepthBuffer, 
 			m_pShadowMap, 
 			m_pVoxelBuffer,
-			frameWidthInPixels, frameHeightInPixels
+			m_frameWidthInPixels, m_frameHeightInPixels
 		);
 	}
 	else
@@ -668,7 +665,7 @@ void Rasterizer::render
 			outColorBuffer,
 			m_pVoxelBuffer,
 			m_pShadowMap,
-			frameWidthInPixels, frameHeightInPixels,
+			m_frameWidthInPixels, m_frameHeightInPixels,
 			lightGetDir(),
 			lightGetCam().viewProjection,
 			lightGetDiffusePower()

@@ -11,26 +11,13 @@ class Rasterizer
 {
 public:
 
-	void init( int frameWidthInPixels, int frameHeightInPixels );
+	Rasterizer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
 	~Rasterizer();
 
-	/**
-	 * Invokes the rasterizer on the GPU. This function exists to separate
-	 * device code from host code. It is being called by the kernel-caller (host code) and
-	 * itself calls the actual kernels used for rendering an asvo.
-	 *
-	 * @param colorBuffer              The color-buffer to output the final image into.
-	 * @param obj                      The Object3d to be rendered.
-	 * @param cam                      The virtual camera to be used for rendering.
-	 * @param lightWorldViewProjection light matrix * obj world transform matrix * camera view matrix * camera projection matrix.
-	 */
 	void rasterize
 	(
 		Object3d & obj,
 		Camera const & cam,
-		int frameWidthInPixels, int frameHeightInPixels,
-
-		bool shadowMapping,
 		
 		uchar4 * outColorBuffer
 	);
@@ -42,6 +29,10 @@ private:
 	static int const nTHREADS_DRAW_KERNEL = 128;
 	static int const nTHREADS_DRAW_SHADOW_KERNEL = 192;
 
+	int m_frameWidthInPixels;
+	int m_frameHeightInPixels;
+	bool m_shadowMapping;
+
 	unsigned int * m_pDepthBuffer;
 	VoxelData * m_pVoxelBuffer;
 	float * m_pShadowMap;
@@ -50,7 +41,6 @@ private:
 	(
 		Object3d const & obj,
 		Camera const & cam,
-		int frameWidthInPixels, int frameHeightInPixels,
 
 		bool shadowPass,
 		

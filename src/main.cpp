@@ -39,18 +39,20 @@ int main(int argc, char **argv)
 	// Copy the model to device memory.
 	BFSOctreeCopyToDevice(&imrod.data);
 
-	std::unique_ptr< Rasterizer > pRasterizer( new Rasterizer );
-
+	// TODO: Replace hard-coded values
 	int const frameWidthInPixels = 550;
 	int const frameHeightInPixels = 800;
+	bool const shadowMapping = true;
+
+	std::unique_ptr< Rasterizer > pRasterizer(
+		new Rasterizer( frameWidthInPixels, frameHeightInPixels, shadowMapping )
+	);
 
 	// Initialize the GLUT framework.
 	if (!glueInit(frameWidthInPixels, frameHeightInPixels, argc, argv, pRasterizer.get(), imrod))
 	{
 		return 1;
 	}
-
-	pRasterizer->init( frameWidthInPixels, frameHeightInPixels );
 
 	// Set up the camera.
 	Vector3 pos = { 0.f, 25.f, -100.f };
