@@ -12,7 +12,7 @@
 
 #include "object3d.h"
 
-class Rasterizer;
+class Renderer;
 
 /**
  * Initializes the Glue module. Creates a window, OpenGL context,
@@ -36,7 +36,7 @@ bool glueInit
     unsigned short int windowWidth,
     unsigned short int windowHeight,
     int argc, char **argv,
-    Rasterizer * pRasterizer,
+    Renderer * pRenderer,
 	Object3d obj
 );
 

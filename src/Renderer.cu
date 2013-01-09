@@ -1,4 +1,4 @@
-#include "../inc/Rasterizer.h"
+#include "../inc/Renderer.h"
 
 #include "../inc/bfsoctree_operations.h"
 #include "../inc/light.h"
@@ -490,7 +490,7 @@ static __global__ void drawShadowMap
 	}
 }
 
-Rasterizer::Rasterizer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping ) :
+Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping ) :
 	m_frameWidthInPixels( frameWidthInPixels ),
 	m_frameHeightInPixels( frameHeightInPixels ),
 	m_shadowMapping( shadowMapping )
@@ -521,7 +521,7 @@ Rasterizer::Rasterizer( int frameWidthInPixels, int frameHeightInPixels, bool sh
 	_normal.addressMode[0] = _normal.addressMode[1] = cudaAddressModeWrap;
 }
 
-Rasterizer::~Rasterizer()
+Renderer::~Renderer()
 {
 	if( m_pDepthBuffer )
 	{
@@ -533,7 +533,7 @@ Rasterizer::~Rasterizer()
 
 
 
-void Rasterizer::rasterize
+void Renderer::rasterize
 (
 	Object3d & obj,
 	Camera const & cam,
@@ -602,7 +602,7 @@ void Rasterizer::rasterize
 
 
 
-void Rasterizer::render
+void Renderer::render
 (
 	Object3d const & obj,
 	Camera const & cam,
@@ -682,7 +682,7 @@ void Rasterizer::render
 
 
 // static
-int Rasterizer::nBlocks( int nElements, int nThreadsPerBlock )
+int Renderer::nBlocks( int nElements, int nThreadsPerBlock )
 {
 	int result = nElements / nThreadsPerBlock;
 	return result + ( result * nThreadsPerBlock < nElements );

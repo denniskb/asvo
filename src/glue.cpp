@@ -13,9 +13,7 @@
 
 #include "../inc/camera_operations.h"
 #include "../inc/light.h"
-#include "../inc/Rasterizer.h"
-
-class Rasterizer;
+#include "../inc/Renderer.h"
 
 static int _argc;
 static char **_argv;
@@ -24,7 +22,7 @@ static unsigned short int _windowHeight;
 static double _msFrameTime = 33;
 static GLuint _pbo;
 static GLuint _texture;
-static Rasterizer * _pRasterizer;
+static Renderer * _pRenderer;
 static Object3d _obj;
 
 /*
@@ -76,7 +74,7 @@ bool glueInit
 	unsigned short int windowWidth,
     unsigned short int windowHeight,
     int argc, char **argv,
-    Rasterizer * pRasterizer,
+    Renderer * pRenderer,
 	Object3d obj
 )
 {
@@ -84,7 +82,7 @@ bool glueInit
 	_argv = argv;
 	_windowWidth = windowWidth;
 	_windowHeight = windowHeight;
-	_pRasterizer = pRasterizer;
+	_pRenderer = pRenderer;
 	_obj = obj;
 
 	if (!initGL())
@@ -184,9 +182,9 @@ static void displayFuncDummy(void)
 	cudaGLMapBufferObject((void**)&dptr, _pbo);
 
 	// execute the kernel
-	if( _pRasterizer )
+	if( _pRenderer )
 	{
-		_pRasterizer->rasterize
+		_pRenderer->rasterize
 		(
 			_obj,
 			camGet(),

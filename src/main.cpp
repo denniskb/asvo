@@ -14,7 +14,7 @@
 #include "../inc/math3d.h"
 #include "../inc/object3d.h"
 #include "../inc/object3d_operations.h"
-#include "../inc/Rasterizer.h"
+#include "../inc/Renderer.h"
 #include "../inc/vector3.h"
 
 int main(int argc, char **argv)
@@ -44,12 +44,12 @@ int main(int argc, char **argv)
 	int const frameHeightInPixels = 800;
 	bool const shadowMapping = true;
 
-	std::unique_ptr< Rasterizer > pRasterizer(
-		new Rasterizer( frameWidthInPixels, frameHeightInPixels, shadowMapping )
+	std::unique_ptr< Renderer > pRenderer(
+		new Renderer( frameWidthInPixels, frameHeightInPixels, shadowMapping )
 	);
 
 	// Initialize the GLUT framework.
-	if (!glueInit(frameWidthInPixels, frameHeightInPixels, argc, argv, pRasterizer.get(), imrod))
+	if (!glueInit(frameWidthInPixels, frameHeightInPixels, argc, argv, pRenderer.get(), imrod))
 	{
 		return 1;
 	}

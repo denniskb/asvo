@@ -112,7 +112,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\vector4.h" />
     <ClInclude Include="inc\visualdata.h" />
     <ClInclude Include="inc\voxeldata.h" />
-    <ClInclude Include="inc\Rasterizer.h" />
+    <ClInclude Include="inc\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\bfsoctree_operations.cpp" />
@@ -126,7 +126,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\Rasterizer.cu" />
+    <CudaCompile Include="src\Renderer.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

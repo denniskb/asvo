@@ -7,12 +7,12 @@
 #include "object3d.h"
 #include "voxeldata.h"
 
-class Rasterizer
+class Renderer
 {
 public:
 
-	Rasterizer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
-	~Rasterizer();
+	Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
+	~Renderer();
 
 	void rasterize
 	(
