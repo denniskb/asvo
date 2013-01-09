@@ -184,7 +184,7 @@ static void displayFuncDummy(void)
 	// execute the kernel
 	if( _pRenderer )
 	{
-		_pRenderer->rasterize
+		_pRenderer->render
 		(
 			_obj,
 			camGet(),

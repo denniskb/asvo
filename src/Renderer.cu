@@ -533,7 +533,7 @@ Renderer::~Renderer()
 
 
 
-void Renderer::rasterize
+void Renderer::render
 (
 	Object3d & obj,
 	Camera const & cam,
@@ -563,7 +563,7 @@ void Renderer::rasterize
 		_h_startIndex = 0;
 		_h_endIndex = obj.data.jobCount;
 		_h_level = obj.data.level;
-		render
+		rasterize
 		( 
 			obj, 
 			lightGetCam(),
@@ -589,7 +589,7 @@ void Renderer::rasterize
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
 	_h_level = obj.data.level;
-	render
+	rasterize
 	( 
 		obj, 
 		cam,
@@ -602,7 +602,7 @@ void Renderer::rasterize
 
 
 
-void Renderer::render
+void Renderer::rasterize
 (
 	Object3d const & obj,
 	Camera const & cam,

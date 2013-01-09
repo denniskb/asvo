@@ -14,7 +14,7 @@ public:
 	Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
 	~Renderer();
 
-	void rasterize
+	void render
 	(
 		Object3d & obj,
 		Camera const & cam,
@@ -37,7 +37,7 @@ private:
 	VoxelData * m_pVoxelBuffer;
 	float * m_pShadowMap;
 
-	void render
+	void rasterize
 	(
 		Object3d const & obj,
 		Camera const & cam,
