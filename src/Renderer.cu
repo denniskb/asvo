@@ -523,12 +523,9 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 
 Renderer::~Renderer()
 {
-	if( m_pDepthBuffer )
-	{
-		cudaFree( m_pDepthBuffer );
-		cudaFree( m_pVoxelBuffer );
-		cudaFree( m_pShadowMap );
-	}
+	cudaFree( m_pDepthBuffer );
+	cudaFree( m_pVoxelBuffer );
+	cudaFree( m_pShadowMap );
 }
 
 
