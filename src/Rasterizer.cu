@@ -1,7 +1,6 @@
 #include "../inc/Rasterizer.h"
 
 #include "../inc/bfsoctree_operations.h"
-#include "../inc/glue.h"
 #include "../inc/light.h"
 
 // Include the implementations of all math functions.
@@ -9,19 +8,11 @@
 // in the same .cu file.
 #include "math3d.cpp"
 
-/**
- * If SHADOW is defined, shadows are rendered using a shadow map.
- */
-#define SHADOW
-
 #define QUEUE_LENGTH 10000000
 #define INT_MAX_VALUE 4294967295ul
 
 static int _h_startIndex, _h_endIndex;
 static int _h_level;
-
-static __constant__ int _windowWidth, _windowHeight;
-static __constant__ int _windowResolution;
 
 static __constant__ int _frame;
 
@@ -92,6 +83,8 @@ static __global__ void clearBuffers
 	unsigned int * depthBuffer,
 	uchar4 * colorBuffer,
 	float * shadowMap,
+	int frameWidth, int frameHeight,
+
     unsigned short int jobCount,
 	BFSJob * jobs,
 	bool shadowPass
@@ -99,7 +92,7 @@ static __global__ void clearBuffers
 {
 	unsigned long int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
 
-	if (threadIndex < _windowResolution)
+	if (threadIndex < frameWidth * frameHeight)
 	{
 		if (shadowPass)
 		{
@@ -153,7 +146,8 @@ static __global__ void traverse
     float dimension,
     Matrix world, Vector3 camPos, Matrix view, Matrix projection,
     Matrix * animation, unsigned char boneCount,
-    unsigned int * depthBuffer, VoxelData * voxelBuffer
+    unsigned int * depthBuffer, VoxelData * voxelBuffer,
+	int frameWidth, int frameHeight
 )
 {
 	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + _startIndex;	
@@ -239,22 +233,22 @@ static __global__ void traverse
 			 0.f <= center.z + dimVec.x && center.z - dimVec.x <= 1.f &&
 			 (_level <= 8 || d_vecDot(node.vd.normal, eyeVec) >= -0.4f))
 		{	
-			center.x = (center.x + 1.f) * _windowWidth * 0.5f;
-			center.y = _windowHeight - (center.y + 1.f) * _windowHeight * 0.5f;
+			center.x = (center.x + 1.f) * frameWidth * 0.5f;
+			center.y = frameHeight - (center.y + 1.f) * frameHeight * 0.5f;
 
-			dimVec.x *= _windowWidth;
-			dimVec.y *= _windowHeight;
+			dimVec.x *= frameWidth;
+			dimVec.y *= frameHeight;
 
 			x = center.x;
 			y = center.y;				
 
 			x = max(x, 0);
-			x = min(x, _windowWidth - 1);
+			x = min(x, frameWidth - 1);
 			y = max(y, 0);
-			y = min(y, _windowHeight - 1);		
+			y = min(y, frameHeight - 1);		
 								
 			depth = center.z * INT_MAX_VALUE;
-			index = x + y * _windowWidth;
+			index = x + y * frameWidth;
 
 			if ((dimVec.x > 1.f) && (z = d_getChildCountFromMask(node.mask)) != 0)
 			{	
@@ -333,6 +327,7 @@ static __global__ void draw
 	uchar4 * colorBuffer,
 	VoxelData * voxelBuffer,
 	float * shadowMap,
+	int frameWidth, int frameHeight,
 
     Vector3 light,
 	Matrix lightWorldViewProjection,
@@ -343,18 +338,18 @@ static __global__ void draw
 	int startIndex, curIndex, x, y;
 	VoxelData vd, minVd;
 
-	if (index < _windowResolution)
+	if( index < frameWidth * frameHeight )
 	{
-		y = index / _windowWidth;
-		x = index - y * _windowWidth;
+		y = index / frameWidth;
+		x = index - y * frameWidth;
 		
-		startIndex = index - _windowWidth - 1;
+		startIndex = index - frameWidth - 1;
 		curIndex = 0;
 
 #pragma unroll 9
 		for (int i = 0; i < 9; ++i)
 		{
-			index2 = min(max(startIndex + curIndex, 0), _windowResolution);
+			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);
 			if ((depth = tex1Dfetch(_depthBuffer, index2)) < minDepth)
 			{		
 				vd = voxelBuffer[index2];				
@@ -369,7 +364,7 @@ static __global__ void draw
 			if (++curIndex == 3)
 			{
 				curIndex = 0;
-				startIndex += _windowWidth;
+				startIndex += frameWidth;
 			}
 		}
 		
@@ -379,18 +374,18 @@ static __global__ void draw
 
 			//shadow mapping
 			minVd.center = d_vecMulM(minVd.center, lightWorldViewProjection);
-			minVd.center.x = (minVd.center.x + 1.f) * _windowWidth * 0.5f;
-			minVd.center.y = _windowHeight - (minVd.center.y + 1.f) * _windowHeight * 0.5f;
+			minVd.center.x = (minVd.center.x + 1.f) * frameWidth * 0.5f;
+			minVd.center.y = frameHeight - (minVd.center.y + 1.f) * frameHeight * 0.5f;
 
 			x = minVd.center.x;
 			y = minVd.center.y;				
 
 			x = max(x, 0);
-			x = min(x, _windowWidth - 1);
+			x = min(x, frameWidth - 1);
 			y = max(y, 0);
-			y = min(y, _windowHeight - 1);
+			y = min(y, frameHeight - 1);
 			
-			index2 = x + y * _windowWidth;			
+			index2 = x + y * frameWidth;			
 			
 			float4 tempf;
 			if (minVd.center.z <= shadowMap[index2] + 0.01f) //not in shadow		
@@ -452,25 +447,26 @@ static __global__ void drawShadowMap
 (
 	unsigned int * depthBuffer,
 	float * shadowMap,
-	VoxelData * voxelBuffer
+	VoxelData * voxelBuffer,
+	int frameWidth, int frameHeight
 )
 {
 	unsigned long int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX_VALUE, depth;
 	int startIndex, curIndex, x, y;
 	VoxelData vd;
 
-	if (index < _windowResolution)
+	if (index < frameWidth * frameHeight)
 	{
-		y = index / _windowWidth;
-		x = index - y * _windowWidth;
+		y = index / frameWidth;
+		x = index - y * frameWidth;
 		
-		startIndex = index - _windowWidth - 1;
+		startIndex = index - frameWidth - 1;
 		curIndex = 0;
 
 #pragma unroll 9
 		for (int i = 0; i < 9; ++i)
 		{
-			index2 = min(max(startIndex + curIndex, 0), _windowResolution);						
+			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);						
 			if ((depth = tex1Dfetch(_depthBuffer, index2)) < minDepth)
 			{		
 				vd = voxelBuffer[index2];				
@@ -482,7 +478,7 @@ static __global__ void drawShadowMap
 			if (++curIndex == 3)
 			{
 				curIndex = 0;
-				startIndex += _windowWidth;
+				startIndex += frameWidth;
 			}
 		}
 		
@@ -494,17 +490,13 @@ static __global__ void drawShadowMap
 	}
 }
 
-void Rasterizer::init()
+void Rasterizer::init( int frameWidthInPixels, int frameHeightInPixels )
 {
-	cudaMalloc( & m_pDepthBuffer, glueGetWindowResolution() * sizeof( unsigned int ) );
-	cudaMalloc( & m_pVoxelBuffer, glueGetWindowResolution() * sizeof( VoxelData ) );
-	cudaMalloc( & m_pShadowMap, glueGetWindowResolution() * sizeof( float ) );
+	int frameResolution = frameWidthInPixels * frameHeightInPixels;
 
-	int windowWidth = glueGetWindowWidth(), windowHeight = glueGetWindowHeight();
-	int windowResolution = glueGetWindowResolution();
-	cudaMemcpyToSymbol(_windowWidth, &windowWidth, sizeof(windowWidth));
-	cudaMemcpyToSymbol(_windowHeight, &windowHeight, sizeof(windowHeight));
-	cudaMemcpyToSymbol(_windowResolution, &windowResolution, sizeof(windowResolution));
+	cudaMalloc( & m_pDepthBuffer, frameResolution * sizeof( unsigned int ) );
+	cudaMalloc( & m_pVoxelBuffer, frameResolution * sizeof( VoxelData ) );
+	cudaMalloc( & m_pShadowMap, frameResolution * sizeof( float ) );
 
 	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
 
@@ -540,39 +532,56 @@ Rasterizer::~Rasterizer()
 
 void Rasterizer::rasterize
 (
-	uchar4 * colorBuffer,
-	Object3d obj,
-	Camera cam,
-	Matrix lightWorldViewProjection
+	Object3d & obj,
+	Camera const & cam,
+	int frameWidthInPixels, int frameHeightInPixels,
+
+	bool shadowMapping,
+		
+	uchar4 * outColorBuffer
 )
 {
+	int frameResolution = frameWidthInPixels * frameHeightInPixels;
+
 	int frame = BFSOctreeUpdate(&obj.data);
 	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
 
 	cudaThreadSynchronize();
-	clearBuffers<<< nBlocks( glueGetWindowResolution(), nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 	(
 		m_pDepthBuffer,
-		colorBuffer,
+		outColorBuffer,
 		m_pShadowMap,
+		frameWidthInPixels, frameHeightInPixels,
 		obj.data.jobCount,
 		obj.data.d_jobs,
 		true
 	);
 
-#ifdef SHADOW
-	_h_startIndex = 0;
-	_h_endIndex = obj.data.jobCount;
-	_h_level = obj.data.level;
-	render( colorBuffer, obj, lightGetCam(), true, lightWorldViewProjection );
-#endif
+	if( shadowMapping )
+	{
+		_h_startIndex = 0;
+		_h_endIndex = obj.data.jobCount;
+		_h_level = obj.data.level;
+		render
+		( 
+			obj, 
+			lightGetCam(),
+			frameWidthInPixels, frameHeightInPixels,
+		
+			true,
+
+			outColorBuffer
+		);
+	}
 
 	cudaThreadSynchronize();
-	clearBuffers<<< nBlocks( glueGetWindowResolution(), nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 	(
 		m_pDepthBuffer,
-		colorBuffer, 
+		outColorBuffer, 
 		m_pShadowMap, 
+		frameWidthInPixels, frameHeightInPixels,
 		obj.data.jobCount, 
 		obj.data.d_jobs, 
 		false
@@ -581,20 +590,33 @@ void Rasterizer::rasterize
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
 	_h_level = obj.data.level;
-	render( colorBuffer, obj, cam, false, lightWorldViewProjection );
+	render
+	( 
+		obj, 
+		cam,
+		frameWidthInPixels, frameHeightInPixels,
+		
+		false,
+
+		outColorBuffer
+	);
 }
 
 
 
 void Rasterizer::render
 (
-	uchar4 * colorBuffer,
-    Object3d obj,
-	Camera cam,
+	Object3d const & obj,
+	Camera const & cam,
+	int frameWidthInPixels, int frameHeightInPixels,
+
 	bool shadowPass,
-	Matrix lightWorldViewProjection
+		
+	uchar4 * outColorBuffer
 )
 {
+	int frameResolution = frameWidthInPixels * frameHeightInPixels;
+
 	cudaThreadSynchronize();
 	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
 
@@ -612,7 +634,8 @@ void Rasterizer::render
 			obj.data.dim,
 			obj.transform, cam.pos, cam.view, cam.projection,
 			obj.data.d_animation, obj.data.boneCount,
-			m_pDepthBuffer, m_pVoxelBuffer
+			m_pDepthBuffer, m_pVoxelBuffer,
+			frameWidthInPixels, frameHeightInPixels
 		);
 		
 		_h_startIndex = _h_endIndex;		
@@ -621,14 +644,15 @@ void Rasterizer::render
 	}
 	while (_h_endIndex - _h_startIndex > 0);
 	
-	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) m_pDepthBuffer, _depthBufferDesc, (size_t) (glueGetWindowResolution() * sizeof(unsigned int)));
-	if (shadowPass)
+	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) m_pDepthBuffer, _depthBufferDesc, (size_t) (frameResolution * sizeof(unsigned int)));
+	if( shadowPass )
 	{
-		drawShadowMap<<< nBlocks( glueGetWindowResolution(), nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
+		drawShadowMap<<< nBlocks( frameResolution, nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
 		(
 			m_pDepthBuffer, 
 			m_pShadowMap, 
-			m_pVoxelBuffer
+			m_pVoxelBuffer,
+			frameWidthInPixels, frameHeightInPixels
 		);
 	}
 	else
@@ -638,14 +662,15 @@ void Rasterizer::render
 		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
 		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
 
-		draw<<< nBlocks( glueGetWindowResolution(), Rasterizer::nTHREADS_DRAW_KERNEL ), Rasterizer::nTHREADS_DRAW_KERNEL >>>
+		draw<<< nBlocks( frameResolution, nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
 			m_pDepthBuffer,
-			colorBuffer,
+			outColorBuffer,
 			m_pVoxelBuffer,
 			m_pShadowMap,
+			frameWidthInPixels, frameHeightInPixels,
 			lightGetDir(),
-			lightWorldViewProjection,
+			lightGetCam().viewProjection,
 			lightGetDiffusePower()
 		);
 

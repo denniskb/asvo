@@ -41,13 +41,16 @@ int main(int argc, char **argv)
 
 	std::unique_ptr< Rasterizer > pRasterizer( new Rasterizer );
 
+	int const frameWidthInPixels = 550;
+	int const frameHeightInPixels = 800;
+
 	// Initialize the GLUT framework.
-	if (!glueInit(550, 800, argc, argv, pRasterizer.get(), imrod))
+	if (!glueInit(frameWidthInPixels, frameHeightInPixels, argc, argv, pRasterizer.get(), imrod))
 	{
 		return 1;
 	}
 
-	pRasterizer->init();
+	pRasterizer->init( frameWidthInPixels, frameHeightInPixels );
 
 	// Set up the camera.
 	Vector3 pos = { 0.f, 25.f, -100.f };

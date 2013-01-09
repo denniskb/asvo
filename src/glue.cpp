@@ -186,7 +186,18 @@ static void displayFuncDummy(void)
 	// execute the kernel
 	if( _pRasterizer )
 	{
-		_pRasterizer->rasterize( dptr, _obj, camGet(), lightGetCam().viewProjection );
+		// TODO: Replace hard-coded value
+		bool shadowMapping = true;
+		_pRasterizer->rasterize
+		(
+			_obj,
+			camGet(),
+			glueGetWindowWidth(), glueGetWindowHeight(),
+			
+			shadowMapping,
+			
+			dptr
+		);
 	}
 
 	// unmap buffer object

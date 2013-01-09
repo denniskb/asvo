@@ -11,7 +11,7 @@ class Rasterizer
 {
 public:
 
-	void init();
+	void init( int frameWidthInPixels, int frameHeightInPixels );
 	~Rasterizer();
 
 	/**
@@ -26,10 +26,13 @@ public:
 	 */
 	void rasterize
 	(
-		uchar4 * colorBuffer,
-		Object3d obj,
-		Camera cam,
-		Matrix lightWorldViewProjection
+		Object3d & obj,
+		Camera const & cam,
+		int frameWidthInPixels, int frameHeightInPixels,
+
+		bool shadowMapping,
+		
+		uchar4 * outColorBuffer
 	);
 
 private:
@@ -43,24 +46,17 @@ private:
 	VoxelData * m_pVoxelBuffer;
 	float * m_pShadowMap;
 
-	/**
-	 * Encapsulates the whole render process including clearBuffers, traverse and draw.
-	 * Manages the job queue and adjusts execution configurations of kernels to maximize performance.
-	 *
-	 * @param colorBuffer              The color buffer.
-	 * @param obj                      The model to be rendered.
-	 * @param cam                      The virtual camera.
-	 * @param shadowPass               Determines whether the output of this pass is an image or a shadow map.
-	 * @param lightWorldViewProjection light transform * model world transform * camera view transform * camera projection transform
-	 */
 	void render
 	(
-		uchar4 * colorBuffer,
-		Object3d obj,
-		Camera cam,
+		Object3d const & obj,
+		Camera const & cam,
+		int frameWidthInPixels, int frameHeightInPixels,
+
 		bool shadowPass,
-		Matrix lightWorldViewProjection
+		
+		uchar4 * outColorBuffer
 	);
 
+	/* Computes ceil( (double) nElements / nThreadsPerBlock ) */
 	static int nBlocks( int nElements, int nThreadsPerBlock );
 };
