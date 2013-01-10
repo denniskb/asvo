@@ -646,8 +646,10 @@ void Renderer::clearColorBuffer( uchar4 * dpOutColorBuffer )
 {
 	int const frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
 
+	// TODO: Optimize exec. config.
+	int const nThreads = 192;
 	uchar4 const colorBufferClearValue = make_uchar4( 51, 51, 51, 255 );
-	clearColorBufferKernel<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+	clearColorBufferKernel<<< nBlocks( frameResolution, nThreads ), nThreads >>>
 	(
 		dpOutColorBuffer,
 		frameResolution,

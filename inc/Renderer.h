@@ -24,7 +24,6 @@ public:
 
 private:
 
-	static int const nTHREADS_CLEAR_KERNEL = 192;
 	static int const nTHREADS_TRAV_KERNEL = 128;
 	static int const nTHREADS_DRAW_KERNEL = 128;
 	static int const nTHREADS_DRAW_SHADOW_KERNEL = 192;
