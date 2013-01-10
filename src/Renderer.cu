@@ -80,9 +80,7 @@ static __device__ BFSJob jobInit
  */
 static __global__ void clearBuffers
 (
-	unsigned int * depthBuffer,
 	uchar4 * colorBuffer,
-	float * shadowMap,
 	int frameWidth, int frameHeight,
 
     unsigned short int jobCount,
@@ -96,12 +94,8 @@ static __global__ void clearBuffers
 	{
 		if (shadowPass)
 		{
-			depthBuffer[threadIndex] = INT_MAX_VALUE;
 			colorBuffer[threadIndex] = make_uchar4(51, 51, 51, 0);
-			shadowMap[threadIndex] = 1.f;
 		}
-		else
-			depthBuffer[threadIndex] = INT_MAX_VALUE;
 
 		if (threadIndex < jobCount)
 		{
@@ -537,19 +531,20 @@ void Renderer::render
 	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
 
 	cudaThreadSynchronize();
-	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
-	(
-		thrust::raw_pointer_cast( m_depthBuffer.data() ),
-		outColorBuffer,
-		thrust::raw_pointer_cast( m_shadowMap.data() ),
-		m_frameWidthInPixels, m_frameHeightInPixels,
-		obj.data.jobCount,
-		obj.data.d_jobs,
-		true
-	);
 
 	if( m_shadowMapping )
 	{
+		clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+		(
+			outColorBuffer,
+			m_frameWidthInPixels, m_frameHeightInPixels,
+			obj.data.jobCount,
+			obj.data.d_jobs,
+			true
+		);
+		clearDepthBuffer();
+		clearShadowMap();
+
 		_h_startIndex = 0;
 		_h_endIndex = obj.data.jobCount;
 		_h_level = obj.data.level;
@@ -567,14 +562,13 @@ void Renderer::render
 	cudaThreadSynchronize();
 	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 	(
-		thrust::raw_pointer_cast( m_depthBuffer.data() ),
 		outColorBuffer, 
-		thrust::raw_pointer_cast( m_shadowMap.data() ), 
 		m_frameWidthInPixels, m_frameHeightInPixels,
 		obj.data.jobCount, 
 		obj.data.d_jobs, 
 		false
 	);
+	clearDepthBuffer();
 
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
@@ -667,6 +661,20 @@ void Renderer::rasterize
 		cudaUnbindTexture( _normal );
 	}
 	cudaUnbindTexture( _depthBuffer );
+}
+
+
+
+void Renderer::clearDepthBuffer()
+{
+	unsigned int const depthBufferClearValue = std::numeric_limits< unsigned int >::max();
+	m_depthBuffer.assign( m_depthBuffer.size(), depthBufferClearValue );
+}
+
+void Renderer::clearShadowMap()
+{
+	float const shadowMapClearValue = 1;
+	m_shadowMap.assign( m_shadowMap.size(), shadowMapClearValue );
 }
 
 

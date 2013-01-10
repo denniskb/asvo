@@ -47,6 +47,9 @@ private:
 		uchar4 * outColorBuffer
 	);
 
+	void clearDepthBuffer();
+	void clearShadowMap();
+
 	/* Computes ceil( (double) nElements / nThreadsPerBlock ) */
 	static int nBlocks( int nElements, int nThreadsPerBlock );
 };
