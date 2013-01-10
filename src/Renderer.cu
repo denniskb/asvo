@@ -475,15 +475,13 @@ static __global__ void drawShadowMap
 }
 
 Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping ) :
-	m_frameWidthInPixels( frameWidthInPixels ),
-	m_frameHeightInPixels( frameHeightInPixels ),
+	m_frameWidth( frameWidthInPixels ),
+	m_frameHeight( frameHeightInPixels ),
 	m_shadowMapping( shadowMapping )
 {
-	int frameResolution = frameWidthInPixels * frameHeightInPixels;
-
-	m_depthBuffer.resize( frameResolution );
-	m_voxelBuffer.resize( frameResolution );
-	m_shadowMap.resize( frameResolution );
+	m_depthBuffer.resize( resolution() );
+	m_voxelBuffer.resize( resolution() );
+	m_shadowMap.resize( resolution() );
 
 	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
 
@@ -515,8 +513,6 @@ void Renderer::render
 	uchar4 * outColorBuffer
 )
 {
-	int frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
-
 	int frame = BFSOctreeUpdate(&obj.data);
 	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
 
@@ -574,8 +570,6 @@ void Renderer::rasterize
 	uchar4 * outColorBuffer
 )
 {
-	int frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
-
 	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
 
 	do
@@ -593,7 +587,7 @@ void Renderer::rasterize
 			obj.transform, cam.pos, cam.view, cam.projection,
 			obj.data.d_animation, obj.data.boneCount,
 			thrust::raw_pointer_cast( m_depthBuffer.data() ), thrust::raw_pointer_cast( m_voxelBuffer.data() ),
-			m_frameWidthInPixels, m_frameHeightInPixels
+			m_frameWidth, m_frameHeight
 		);
 		
 		_h_startIndex = _h_endIndex;		
@@ -602,15 +596,22 @@ void Renderer::rasterize
 	}
 	while (_h_endIndex - _h_startIndex > 0);
 	
-	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) thrust::raw_pointer_cast( m_depthBuffer.data() ), _depthBufferDesc, (size_t) (frameResolution * sizeof(unsigned int)));
+	cudaBindTexture
+	(
+		(size_t *) 0,
+		_depthBuffer,
+		(void *) thrust::raw_pointer_cast( m_depthBuffer.data() ),
+		_depthBufferDesc,
+		(size_t) ( resolution() * sizeof( unsigned int ) )
+	);
 	if( shadowPass )
 	{
-		drawShadowMap<<< nBlocks( frameResolution, nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
+		drawShadowMap<<< nBlocks( resolution(), nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
 		(
 			thrust::raw_pointer_cast( m_depthBuffer.data() ), 
 			thrust::raw_pointer_cast( m_shadowMap.data() ), 
 			thrust::raw_pointer_cast( m_voxelBuffer.data() ),
-			m_frameWidthInPixels, m_frameHeightInPixels
+			m_frameWidth, m_frameHeight
 		);
 	}
 	else
@@ -620,13 +621,13 @@ void Renderer::rasterize
 		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
 		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
 
-		draw<<< nBlocks( frameResolution, nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
+		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
 			thrust::raw_pointer_cast( m_depthBuffer.data() ),
 			outColorBuffer,
 			thrust::raw_pointer_cast( m_voxelBuffer.data() ),
 			thrust::raw_pointer_cast( m_shadowMap.data() ),
-			m_frameWidthInPixels, m_frameHeightInPixels,
+			m_frameWidth, m_frameHeight,
 			lightGetDir(),
 			lightGetCam().viewProjection,
 			lightGetDiffusePower()
@@ -644,15 +645,13 @@ void Renderer::rasterize
 
 void Renderer::clearColorBuffer( uchar4 * dpOutColorBuffer )
 {
-	int const frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
-
 	// TODO: Optimize exec. config.
 	int const nThreads = 192;
 	uchar4 const colorBufferClearValue = make_uchar4( 51, 51, 51, 255 );
-	clearColorBufferKernel<<< nBlocks( frameResolution, nThreads ), nThreads >>>
+	clearColorBufferKernel<<< nBlocks( resolution(), nThreads ), nThreads >>>
 	(
 		dpOutColorBuffer,
-		frameResolution,
+		resolution(),
 		colorBufferClearValue
 	);
 }
@@ -674,6 +673,13 @@ void Renderer::fillJobQueue( BFSJob const * dpJobs, int jobCount )
 	// TODO: Optimize exec. config.
 	int const nThreads = 192;
 	fillJobQueueKernel<<< nBlocks( jobCount, nThreads ), nThreads >>>( dpJobs, jobCount );
+}
+
+
+
+int Renderer::resolution() const
+{
+	return m_frameWidth * m_frameHeight;
 }
 
 

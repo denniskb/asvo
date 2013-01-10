@@ -28,8 +28,8 @@ private:
 	static int const nTHREADS_DRAW_KERNEL = 128;
 	static int const nTHREADS_DRAW_SHADOW_KERNEL = 192;
 
-	int m_frameWidthInPixels;
-	int m_frameHeightInPixels;
+	int m_frameWidth;
+	int m_frameHeight;
 	bool m_shadowMapping;
 
 	thrust::device_vector< unsigned int > m_depthBuffer;
@@ -50,6 +50,8 @@ private:
 	void clearDepthBuffer();
 	void clearShadowMap();
 	void fillJobQueue( BFSJob const * dpJobs, int jobCount );
+
+	int resolution() const;
 
 	/* Computes ceil( (double) nElements / nThreadsPerBlock ) */
 	static int nBlocks( int nElements, int nThreadsPerBlock );

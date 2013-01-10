@@ -19,6 +19,15 @@
 
 int main(int argc, char **argv)
 {	
+	// TODO: Replace hard-coded values
+	int const frameWidthInPixels = 550;
+	int const frameHeightInPixels = 800;
+	bool const shadowMapping = true;
+
+	std::unique_ptr< Renderer > pRenderer(
+		new Renderer( frameWidthInPixels, frameHeightInPixels, shadowMapping )
+	);
+
 	std::string path( argv[ 0 ] );
 	int lastSlash = path.find_last_of( "\\" );
 	path.resize( lastSlash + 1 );
@@ -36,17 +45,7 @@ int main(int argc, char **argv)
 
 	Vector3 rotAxis = { 1.f, 0.f, 0.f };
 	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
-	// Copy the model to device memory.
 	BFSOctreeCopyToDevice(&imrod.data);
-
-	// TODO: Replace hard-coded values
-	int const frameWidthInPixels = 550;
-	int const frameHeightInPixels = 800;
-	bool const shadowMapping = true;
-
-	std::unique_ptr< Renderer > pRenderer(
-		new Renderer( frameWidthInPixels, frameHeightInPixels, shadowMapping )
-	);
 
 	// Initialize the GLUT framework.
 	if (!glueInit(frameWidthInPixels, frameHeightInPixels, argc, argv, pRenderer.get(), imrod))
