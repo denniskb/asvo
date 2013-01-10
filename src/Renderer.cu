@@ -497,9 +497,9 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 {
 	int frameResolution = frameWidthInPixels * frameHeightInPixels;
 
-	cudaMalloc( & m_pDepthBuffer, frameResolution * sizeof( unsigned int ) );
-	cudaMalloc( & m_pVoxelBuffer, frameResolution * sizeof( VoxelData ) );
-	cudaMalloc( & m_pShadowMap, frameResolution * sizeof( float ) );
+	m_depthBuffer.resize( frameResolution );
+	m_voxelBuffer.resize( frameResolution );
+	m_shadowMap.resize( frameResolution );
 
 	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
 
@@ -521,13 +521,6 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 	_normal.addressMode[0] = _normal.addressMode[1] = cudaAddressModeWrap;
 }
 
-Renderer::~Renderer()
-{
-	cudaFree( m_pDepthBuffer );
-	cudaFree( m_pVoxelBuffer );
-	cudaFree( m_pShadowMap );
-}
-
 
 
 void Renderer::render
@@ -546,9 +539,9 @@ void Renderer::render
 	cudaThreadSynchronize();
 	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 	(
-		m_pDepthBuffer,
+		thrust::raw_pointer_cast( m_depthBuffer.data() ),
 		outColorBuffer,
-		m_pShadowMap,
+		thrust::raw_pointer_cast( m_shadowMap.data() ),
 		m_frameWidthInPixels, m_frameHeightInPixels,
 		obj.data.jobCount,
 		obj.data.d_jobs,
@@ -574,9 +567,9 @@ void Renderer::render
 	cudaThreadSynchronize();
 	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 	(
-		m_pDepthBuffer,
+		thrust::raw_pointer_cast( m_depthBuffer.data() ),
 		outColorBuffer, 
-		m_pShadowMap, 
+		thrust::raw_pointer_cast( m_shadowMap.data() ), 
 		m_frameWidthInPixels, m_frameHeightInPixels,
 		obj.data.jobCount, 
 		obj.data.d_jobs, 
@@ -628,7 +621,7 @@ void Renderer::rasterize
 			obj.data.dim,
 			obj.transform, cam.pos, cam.view, cam.projection,
 			obj.data.d_animation, obj.data.boneCount,
-			m_pDepthBuffer, m_pVoxelBuffer,
+			thrust::raw_pointer_cast( m_depthBuffer.data() ), thrust::raw_pointer_cast( m_voxelBuffer.data() ),
 			m_frameWidthInPixels, m_frameHeightInPixels
 		);
 		
@@ -638,14 +631,14 @@ void Renderer::rasterize
 	}
 	while (_h_endIndex - _h_startIndex > 0);
 	
-	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) m_pDepthBuffer, _depthBufferDesc, (size_t) (frameResolution * sizeof(unsigned int)));
+	cudaBindTexture((size_t*) 0, _depthBuffer, (void*) thrust::raw_pointer_cast( m_depthBuffer.data() ), _depthBufferDesc, (size_t) (frameResolution * sizeof(unsigned int)));
 	if( shadowPass )
 	{
 		drawShadowMap<<< nBlocks( frameResolution, nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
 		(
-			m_pDepthBuffer, 
-			m_pShadowMap, 
-			m_pVoxelBuffer,
+			thrust::raw_pointer_cast( m_depthBuffer.data() ), 
+			thrust::raw_pointer_cast( m_shadowMap.data() ), 
+			thrust::raw_pointer_cast( m_voxelBuffer.data() ),
 			m_frameWidthInPixels, m_frameHeightInPixels
 		);
 	}
@@ -658,10 +651,10 @@ void Renderer::rasterize
 
 		draw<<< nBlocks( frameResolution, nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
-			m_pDepthBuffer,
+			thrust::raw_pointer_cast( m_depthBuffer.data() ),
 			outColorBuffer,
-			m_pVoxelBuffer,
-			m_pShadowMap,
+			thrust::raw_pointer_cast( m_voxelBuffer.data() ),
+			thrust::raw_pointer_cast( m_shadowMap.data() ),
 			m_frameWidthInPixels, m_frameHeightInPixels,
 			lightGetDir(),
 			lightGetCam().viewProjection,

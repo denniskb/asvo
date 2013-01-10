@@ -1,5 +1,6 @@
 #pragma once
 
+#include <thrust/device_vector.h>
 #include <vector_types.h>
 
 #include "camera.h"
@@ -12,7 +13,6 @@ class Renderer
 public:
 
 	Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
-	~Renderer();
 
 	void render
 	(
@@ -33,9 +33,9 @@ private:
 	int m_frameHeightInPixels;
 	bool m_shadowMapping;
 
-	unsigned int * m_pDepthBuffer;
-	VoxelData * m_pVoxelBuffer;
-	float * m_pShadowMap;
+	thrust::device_vector< unsigned int > m_depthBuffer;
+	thrust::device_vector< VoxelData > m_voxelBuffer;
+	thrust::device_vector< float > m_shadowMap;
 
 	void rasterize
 	(
