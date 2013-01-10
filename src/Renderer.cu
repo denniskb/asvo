@@ -11,7 +11,6 @@
 #define QUEUE_LENGTH 10000000
 #define INT_MAX_VALUE 4294967295ul
 
-static __device__ int _travQueuePtr;
 static __device__ BFSJob _queue[QUEUE_LENGTH];
 
 static texture<unsigned int, 1, cudaReadModeElementType> _depthBuffer;
@@ -128,7 +127,8 @@ static __global__ void traverse
 	int animationFrameIndex,
 	int octreeLevel,
 	// TODO: Rename
-	int const * startIndex, int const * endIndex
+	int const * startIndex, int const * endIndex,
+	int * travQueuePtr
 )
 {
 	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + ( * startIndex );	
@@ -211,7 +211,7 @@ static __global__ void traverse
 							
 		//viewing frustum + clockwise culling
 		node.vd.normal = d_vecMulM(node.vd.normal, world);
-		if (_travQueuePtr < QUEUE_LENGTH - 100000 &&
+		if ( ( * travQueuePtr ) < QUEUE_LENGTH - 100000 &&
 			-1.f <= center.x + dimVec.x && center.x - dimVec.x <= 1.f &&
 			-1.f <= center.y + dimVec.x && center.y - dimVec.x <= 1.f &&
 			 0.f <= center.z + dimVec.x && center.z - dimVec.x <= 1.f &&
@@ -247,8 +247,10 @@ static __global__ void traverse
 		}
 		
 		__syncthreads();
-		if (threadIdx.x == 0)
-			sharedTravQueuePtr = atomicAdd(&_travQueuePtr, sharedTravQueuePtr);
+		if( threadIdx.x == 0 )
+		{
+			sharedTravQueuePtr = atomicAdd( travQueuePtr, sharedTravQueuePtr );
+		}
 
 		__syncthreads();
 			
@@ -571,8 +573,9 @@ void Renderer::rasterize
 
 	thrust::device_vector< int > dStartIndex( 1 );
 	thrust::device_vector< int > dEndIndex( 1 );
+	thrust::device_vector< int > dTravQueuePtr( 1 );
 
-	cudaMemcpyToSymbol( _travQueuePtr, & hEndIndex, sizeof( hEndIndex ) );
+	dTravQueuePtr[ 0 ] = hEndIndex;
 
 	int octreeLevel = obj.data.level;
 	do
@@ -592,11 +595,12 @@ void Renderer::rasterize
 			m_frameWidth, m_frameHeight,
 			animationFrameIndex,
 			octreeLevel,
-			thrust::raw_pointer_cast( dStartIndex.data() ), thrust::raw_pointer_cast( dEndIndex.data() )
+			thrust::raw_pointer_cast( dStartIndex.data() ), thrust::raw_pointer_cast( dEndIndex.data() ),
+			thrust::raw_pointer_cast( dTravQueuePtr.data() )
 		);
 		
 		hStartIndex = hEndIndex;		
-		cudaMemcpyFromSymbol( & hEndIndex, _travQueuePtr, sizeof( hEndIndex ) );
+		hEndIndex = dTravQueuePtr[ 0 ];
 		octreeLevel++;
 	}
 	while( hEndIndex - hStartIndex > 0 );
