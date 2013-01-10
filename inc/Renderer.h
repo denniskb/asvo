@@ -50,6 +50,7 @@ private:
 	void clearColorBuffer( uchar4 * dpOutColorBuffer );
 	void clearDepthBuffer();
 	void clearShadowMap();
+	void fillJobQueue( BFSJob const * dpJobs, int jobCount );
 
 	/* Computes ceil( (double) nElements / nThreadsPerBlock ) */
 	static int nBlocks( int nElements, int nThreadsPerBlock );

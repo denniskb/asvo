@@ -65,31 +65,17 @@ static __device__ BFSJob jobInit
 	return result;
 }
 
-/**
- * Clears all buffers before rendering a new frame.
- *
- * @param depthBuffer The depth-buffer.
- * @param colorBuffer The color-buffer.
- * @param shadowMap   The shadow-map.
- * @param jobCount    Every BFSOctree stores a couple of BFSJobs in device memory as would
- *                    have been created by traversal without LOD. This is done
- *                    in order to avoid invoking the kernel on a nearly unfilled queue (=> low occupancy)
- *                    jobCount determines the number of these BFSJobs.
- * @param jobs        The job queue residing in device memory.
- * @param shadowPass  Determines whether the output of this pass is an image or a shadow map.
- */
-static __global__ void clearBuffers
+static __global__ void fillJobQueueKernel
 (
-    unsigned short int jobCount,
-	BFSJob * jobs,
-	bool shadowPass
+	BFSJob const * jobs,
+    int jobCount
 )
 {
-	unsigned long int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
+	int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
 
-	if (threadIndex < jobCount)
+	if( threadIndex < jobCount )
 	{
-		_queue[threadIndex] = jobs[threadIndex];
+		_queue[ threadIndex ] = jobs[ threadIndex ];
 	}
 }
 
@@ -534,16 +520,9 @@ void Renderer::render
 	int frame = BFSOctreeUpdate(&obj.data);
 	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
 
-	cudaThreadSynchronize();
-
 	if( m_shadowMapping )
 	{
-		clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
-		(
-			obj.data.jobCount,
-			obj.data.d_jobs,
-			true
-		);
+		fillJobQueue( obj.data.d_jobs, obj.data.jobCount );
 		clearDepthBuffer();
 		clearShadowMap();
 
@@ -561,15 +540,13 @@ void Renderer::render
 		);
 	}
 
-	cudaThreadSynchronize();
-	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
-	(
-		obj.data.jobCount, 
-		obj.data.d_jobs, 
-		false
-	);
+	fillJobQueue( obj.data.d_jobs, obj.data.jobCount );
 	clearColorBuffer( outColorBuffer );
 	clearDepthBuffer();
+	if( ! m_shadowMapping )
+	{
+		clearShadowMap();
+	}
 
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
@@ -599,7 +576,6 @@ void Renderer::rasterize
 {
 	int frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
 
-	cudaThreadSynchronize();
 	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
 
 	do
@@ -689,6 +665,13 @@ void Renderer::clearShadowMap()
 {
 	float const shadowMapClearValue = 1;
 	m_shadowMap.assign( m_shadowMap.size(), shadowMapClearValue );
+}
+
+void Renderer::fillJobQueue( BFSJob const * dpJobs, int jobCount )
+{
+	// TODO: Optimize exec. config.
+	int const nThreads = 192;
+	fillJobQueueKernel<<< nBlocks( jobCount, nThreads ), nThreads >>>( dpJobs, jobCount );
 }
 
 
