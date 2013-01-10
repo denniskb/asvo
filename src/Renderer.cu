@@ -68,7 +68,7 @@ static __device__ BFSJob jobInit
 static __global__ void fillJobQueueKernel
 (
 	BFSJob const * jobs,
-    int jobCount
+	int jobCount
 )
 {
 	int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
