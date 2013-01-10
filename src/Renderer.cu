@@ -80,9 +80,6 @@ static __device__ BFSJob jobInit
  */
 static __global__ void clearBuffers
 (
-	uchar4 * colorBuffer,
-	int frameWidth, int frameHeight,
-
     unsigned short int jobCount,
 	BFSJob * jobs,
 	bool shadowPass
@@ -90,17 +87,24 @@ static __global__ void clearBuffers
 {
 	unsigned long int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
 
-	if (threadIndex < frameWidth * frameHeight)
+	if (threadIndex < jobCount)
 	{
-		if (shadowPass)
-		{
-			colorBuffer[threadIndex] = make_uchar4(51, 51, 51, 0);
-		}
+		_queue[threadIndex] = jobs[threadIndex];
+	}
+}
 
-		if (threadIndex < jobCount)
-		{
-			_queue[threadIndex] = jobs[threadIndex];
-		}
+static __global__ void clearColorBufferKernel
+(
+	uchar4 * dpOutColorBuffer,
+	int frameResolution,
+	uchar4 clearValue
+)
+{
+	int threadIndex = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if( threadIndex < frameResolution )
+	{
+		dpOutColorBuffer[ threadIndex ] = clearValue;
 	}
 }
 
@@ -536,8 +540,6 @@ void Renderer::render
 	{
 		clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 		(
-			outColorBuffer,
-			m_frameWidthInPixels, m_frameHeightInPixels,
 			obj.data.jobCount,
 			obj.data.d_jobs,
 			true
@@ -562,12 +564,11 @@ void Renderer::render
 	cudaThreadSynchronize();
 	clearBuffers<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
 	(
-		outColorBuffer, 
-		m_frameWidthInPixels, m_frameHeightInPixels,
 		obj.data.jobCount, 
 		obj.data.d_jobs, 
 		false
 	);
+	clearColorBuffer( outColorBuffer );
 	clearDepthBuffer();
 
 	_h_startIndex = 0;
@@ -664,6 +665,19 @@ void Renderer::rasterize
 }
 
 
+
+void Renderer::clearColorBuffer( uchar4 * dpOutColorBuffer )
+{
+	int const frameResolution = m_frameWidthInPixels * m_frameHeightInPixels;
+
+	uchar4 const colorBufferClearValue = make_uchar4( 51, 51, 51, 255 );
+	clearColorBufferKernel<<< nBlocks( frameResolution, nTHREADS_CLEAR_KERNEL ), nTHREADS_CLEAR_KERNEL >>>
+	(
+		dpOutColorBuffer,
+		frameResolution,
+		colorBufferClearValue
+	);
+}
 
 void Renderer::clearDepthBuffer()
 {

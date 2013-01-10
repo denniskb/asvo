@@ -47,6 +47,7 @@ private:
 		uchar4 * outColorBuffer
 	);
 
+	void clearColorBuffer( uchar4 * dpOutColorBuffer );
 	void clearDepthBuffer();
 	void clearShadowMap();
 
