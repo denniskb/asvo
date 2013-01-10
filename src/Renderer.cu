@@ -11,9 +11,6 @@
 #define QUEUE_LENGTH 10000000
 #define INT_MAX_VALUE 4294967295ul
 
-static int _h_startIndex, _h_endIndex;
-
-static __constant__ int _startIndex, _endIndex;
 static __device__ int _travQueuePtr;
 static __device__ BFSJob _queue[QUEUE_LENGTH];
 
@@ -129,10 +126,12 @@ static __global__ void traverse
     unsigned int * depthBuffer, VoxelData * voxelBuffer,
 	int frameWidth, int frameHeight,
 	int animationFrameIndex,
-	int octreeLevel
+	int octreeLevel,
+	// TODO: Rename
+	int const * startIndex, int const * endIndex
 )
 {
-	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + _startIndex;	
+	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + ( * startIndex );	
 	short int x, y, z, w = 2;
 	unsigned int depth;
 
@@ -143,7 +142,7 @@ static __global__ void traverse
 
 	__syncthreads();
 
-	if (index < _endIndex)
+	if( index < ( * endIndex ) )
 	{
 		BFSJob job = _queue[index];
 		BFSInnerNode node;
@@ -522,8 +521,6 @@ void Renderer::render
 		clearDepthBuffer();
 		clearShadowMap();
 
-		_h_startIndex = 0;
-		_h_endIndex = obj.data.jobCount;
 		rasterize
 		( 
 			obj, 
@@ -544,8 +541,6 @@ void Renderer::render
 		clearShadowMap();
 	}
 
-	_h_startIndex = 0;
-	_h_endIndex = obj.data.jobCount;
 	rasterize
 	( 
 		obj, 
@@ -571,15 +566,21 @@ void Renderer::rasterize
 	uchar4 * outColorBuffer
 )
 {
-	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
+	int hStartIndex = 0;
+	int hEndIndex = obj.data.jobCount;
+
+	thrust::device_vector< int > dStartIndex( 1 );
+	thrust::device_vector< int > dEndIndex( 1 );
+
+	cudaMemcpyToSymbol( _travQueuePtr, & hEndIndex, sizeof( hEndIndex ) );
 
 	int octreeLevel = obj.data.level;
 	do
 	{		
-		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
-		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
+		dStartIndex[ 0 ] = hStartIndex;
+		dEndIndex[ 0 ] = hEndIndex;
 
-		traverse<<< nBlocks( _h_endIndex - _h_startIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
+		traverse<<< nBlocks( hEndIndex - hStartIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
 		(
 			obj.data.innerNodeCount,
 			obj.data.d_innerNodes,
@@ -590,14 +591,15 @@ void Renderer::rasterize
 			thrust::raw_pointer_cast( m_depthBuffer.data() ), thrust::raw_pointer_cast( m_voxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
 			animationFrameIndex,
-			octreeLevel
+			octreeLevel,
+			thrust::raw_pointer_cast( dStartIndex.data() ), thrust::raw_pointer_cast( dEndIndex.data() )
 		);
 		
-		_h_startIndex = _h_endIndex;		
-		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
+		hStartIndex = hEndIndex;		
+		cudaMemcpyFromSymbol( & hEndIndex, _travQueuePtr, sizeof( hEndIndex ) );
 		octreeLevel++;
 	}
-	while (_h_endIndex - _h_startIndex > 0);
+	while( hEndIndex - hStartIndex > 0 );
 	
 	cudaBindTexture
 	(
