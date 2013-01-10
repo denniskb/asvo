@@ -14,8 +14,6 @@
 static int _h_startIndex, _h_endIndex;
 static int _h_level;
 
-static __constant__ int _frame;
-
 static __constant__ int _startIndex, _endIndex;
 static __constant__ int _level;
 static __device__ int _travQueuePtr;
@@ -131,7 +129,8 @@ static __global__ void traverse
     Matrix world, Vector3 camPos, Matrix view, Matrix projection,
     Matrix * animation, unsigned char boneCount,
     unsigned int * depthBuffer, VoxelData * voxelBuffer,
-	int frameWidth, int frameHeight
+	int frameWidth, int frameHeight,
+	int animationFrameIndex
 )
 {
 	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + _startIndex;	
@@ -169,29 +168,32 @@ static __global__ void traverse
 		unsigned char involvedBones = 0;
         if (node.vd.boneWeights.x > 0.f)
 		{
-			skinnedCenter = d_vecMulS(d_vecMulM(center, animation[_frame*boneCount+node.vd.boneIndex0]),
-                                      node.vd.boneWeights.x);
+			skinnedCenter = d_vecMulS
+			(
+				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex0 ]),
+				node.vd.boneWeights.x
+			);
 			++involvedBones;
 		}
 		if (node.vd.boneWeights.y > 0.f)
 		{
-			skinnedCenter = d_vecAddVec(skinnedCenter, 
-                                        d_vecMulS(d_vecMulM(center, animation[_frame*boneCount+node.vd.boneIndex1]),
-									    node.vd.boneWeights.y));
+			skinnedCenter = d_vecAddVec( skinnedCenter, d_vecMulS(
+				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex1 ]), node.vd.boneWeights.y
+			));
 			++involvedBones;
 		}
 		if (node.vd.boneWeights.z > 0.f)
 		{
-			skinnedCenter = d_vecAddVec(skinnedCenter,
-					                    d_vecMulS(d_vecMulM(center, animation[_frame*boneCount+node.vd.boneIndex2]),
-						                node.vd.boneWeights.z));
+			skinnedCenter = d_vecAddVec( skinnedCenter, d_vecMulS(
+				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex2 ]), node.vd.boneWeights.z
+			));
 			++involvedBones;
 		}
 		if (node.vd.boneWeights.w > 0.f)
 		{
-			skinnedCenter = d_vecAddVec(skinnedCenter, 
-									    d_vecMulS(d_vecMulM(center, animation[_frame*boneCount+node.vd.boneIndex3]),
-									    node.vd.boneWeights.w));
+			skinnedCenter = d_vecAddVec(skinnedCenter, d_vecMulS(
+				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex3 ]), node.vd.boneWeights.w
+			));
 			++involvedBones;
 		}
 		center = skinnedCenter;
@@ -513,8 +515,7 @@ void Renderer::render
 	uchar4 * outColorBuffer
 )
 {
-	int frame = BFSOctreeUpdate(&obj.data);
-	cudaMemcpyToSymbol( _frame, &frame, sizeof(frame) );
+	int animationFrameIndex = BFSOctreeUpdate( & obj.data );
 
 	if( m_shadowMapping )
 	{
@@ -529,6 +530,7 @@ void Renderer::render
 		( 
 			obj, 
 			lightGetCam(),
+			animationFrameIndex,
 		
 			true,
 
@@ -551,6 +553,7 @@ void Renderer::render
 	( 
 		obj, 
 		cam,
+		animationFrameIndex,
 		
 		false,
 
@@ -564,6 +567,7 @@ void Renderer::rasterize
 (
 	Object3d const & obj,
 	Camera const & cam,
+	int animationFrameIndex,
 
 	bool shadowPass,
 		
@@ -587,7 +591,8 @@ void Renderer::rasterize
 			obj.transform, cam.pos, cam.view, cam.projection,
 			obj.data.d_animation, obj.data.boneCount,
 			thrust::raw_pointer_cast( m_depthBuffer.data() ), thrust::raw_pointer_cast( m_voxelBuffer.data() ),
-			m_frameWidth, m_frameHeight
+			m_frameWidth, m_frameHeight,
+			animationFrameIndex
 		);
 		
 		_h_startIndex = _h_endIndex;		

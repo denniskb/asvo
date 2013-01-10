@@ -40,6 +40,7 @@ private:
 	(
 		Object3d const & obj,
 		Camera const & cam,
+		int animationFrameIndex,
 
 		bool shadowPass,
 		
