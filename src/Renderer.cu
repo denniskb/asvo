@@ -12,10 +12,8 @@
 #define INT_MAX_VALUE 4294967295ul
 
 static int _h_startIndex, _h_endIndex;
-static int _h_level;
 
 static __constant__ int _startIndex, _endIndex;
-static __constant__ int _level;
 static __device__ int _travQueuePtr;
 static __device__ BFSJob _queue[QUEUE_LENGTH];
 
@@ -130,7 +128,8 @@ static __global__ void traverse
     Matrix * animation, unsigned char boneCount,
     unsigned int * depthBuffer, VoxelData * voxelBuffer,
 	int frameWidth, int frameHeight,
-	int animationFrameIndex
+	int animationFrameIndex,
+	int octreeLevel
 )
 {
 	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + _startIndex;	
@@ -156,7 +155,7 @@ static __global__ void traverse
 		else
 			node.vd = leaves[job.index - innerNodeCount].vd;
 			
-		float gridCellDim = dimension / ((float)(1 << _level));
+		float gridCellDim = dimension / ( (float) ( 1 << octreeLevel ) );
 		float gridCellHalfDim = gridCellDim * 0.5f;
 		
 		float minCoord = -0.5f * dimension;
@@ -217,7 +216,7 @@ static __global__ void traverse
 			-1.f <= center.x + dimVec.x && center.x - dimVec.x <= 1.f &&
 			-1.f <= center.y + dimVec.x && center.y - dimVec.x <= 1.f &&
 			 0.f <= center.z + dimVec.x && center.z - dimVec.x <= 1.f &&
-			 (_level <= 8 || d_vecDot(node.vd.normal, eyeVec) >= -0.4f))
+			 ( octreeLevel <= 8 || d_vecDot( node.vd.normal, eyeVec ) >= -0.4f ))
 		{	
 			center.x = (center.x + 1.f) * frameWidth * 0.5f;
 			center.y = frameHeight - (center.y + 1.f) * frameHeight * 0.5f;
@@ -525,7 +524,6 @@ void Renderer::render
 
 		_h_startIndex = 0;
 		_h_endIndex = obj.data.jobCount;
-		_h_level = obj.data.level;
 		rasterize
 		( 
 			obj, 
@@ -548,7 +546,6 @@ void Renderer::render
 
 	_h_startIndex = 0;
 	_h_endIndex = obj.data.jobCount;
-	_h_level = obj.data.level;
 	rasterize
 	( 
 		obj, 
@@ -576,11 +573,11 @@ void Renderer::rasterize
 {
 	cudaMemcpyToSymbol(_travQueuePtr, &_h_endIndex, sizeof(_h_endIndex));
 
+	int octreeLevel = obj.data.level;
 	do
 	{		
 		cudaMemcpyToSymbol(_startIndex, &_h_startIndex, sizeof(_h_startIndex));
 		cudaMemcpyToSymbol(_endIndex, &_h_endIndex, sizeof(_h_endIndex));
-		cudaMemcpyToSymbol(_level, &_h_level, sizeof(_h_level));
 
 		traverse<<< nBlocks( _h_endIndex - _h_startIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
 		(
@@ -592,12 +589,13 @@ void Renderer::rasterize
 			obj.data.d_animation, obj.data.boneCount,
 			thrust::raw_pointer_cast( m_depthBuffer.data() ), thrust::raw_pointer_cast( m_voxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
-			animationFrameIndex
+			animationFrameIndex,
+			octreeLevel
 		);
 		
 		_h_startIndex = _h_endIndex;		
 		cudaMemcpyFromSymbol(&_h_endIndex, _travQueuePtr, sizeof(_h_endIndex));		
-		++_h_level;
+		octreeLevel++;
 	}
 	while (_h_endIndex - _h_startIndex > 0);
 	
