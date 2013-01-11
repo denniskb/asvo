@@ -11,7 +11,6 @@
 #include "../inc/bfsoctree.h"
 #include "../inc/glue.h"
 #include "../inc/matrix.h"
-#include "../inc/texture_operations.h"
 
 BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * illum, char const * spec, char const * normal)
 {
@@ -47,10 +46,11 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	result.currentFrame = (double*) malloc(sizeof(double));
 	*(result.currentFrame) = 0.0;
 
-	result.diffuse = texInit(diffuse);
-	result.illum = texInit(illum);
-	result.spec = texInit(spec);
-	result.normal = texInit(normal);
+	// TODO: Replace hard-coded values
+	result.diffuse.reset( new Texture( diffuse, 1024, 1024 ) );
+	result.illum.reset( new Texture( illum, 1024, 1024 ) );
+	result.spec.reset( new Texture( spec, 1024, 1024 ) );
+	result.normal.reset( new Texture( normal, 1024, 1024 ) );
 
 	return result;
 }
@@ -167,10 +167,10 @@ void BFSOctreeCleanup(BFSOctree *octree)
 		octree->currentFrame = NULL;
 	}
 
-	texCleanup(&octree->diffuse);
-	texCleanup(&octree->illum);
-	texCleanup(&octree->spec);
-	texCleanup(&octree->normal);
+	octree->diffuse.reset< Texture >( nullptr );
+	octree->illum.reset< Texture >( nullptr );
+	octree->spec.reset< Texture >( nullptr );
+	octree->normal.reset< Texture >( nullptr );
 }
 
 unsigned long int h_getChildCountFromMask(unsigned long int mask)

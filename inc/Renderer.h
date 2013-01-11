@@ -24,6 +24,10 @@ public:
 
 private:
 
+	/* Prevent Renderer from being copied */
+	Renderer( Renderer const & copy );
+	Renderer & operator=( Renderer const & rhs );
+
 	static int const nTHREADS_TRAV_KERNEL = 128;
 	static int const nTHREADS_DRAW_KERNEL = 128;
 	static int const nTHREADS_DRAW_SHADOW_KERNEL = 192;

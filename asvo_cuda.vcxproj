@@ -104,8 +104,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\matrix.h" />
     <ClInclude Include="inc\object3d.h" />
     <ClInclude Include="inc\object3d_operations.h" />
-    <ClInclude Include="inc\texture.h" />
-    <ClInclude Include="inc\texture_operations.h" />
+    <ClInclude Include="inc\Texture.h" />
     <ClInclude Include="inc\util.h" />
     <ClInclude Include="inc\vector2.h" />
     <ClInclude Include="inc\vector3.h" />
@@ -122,7 +121,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\math3d.cpp" />
     <ClCompile Include="src\object3d_operations.cpp" />
-    <ClCompile Include="src\texture_operations.cpp" />
+    <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>

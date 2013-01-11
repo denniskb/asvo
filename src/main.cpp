@@ -64,6 +64,7 @@ int main(int argc, char **argv)
 	lightSet(light, 0.8f);	
 
 	// Start the main render-and-update loop
+	// FIXME: App crashes if we omit the following call
 	glutMainLoop();	
 
 	// Do cleanup work.

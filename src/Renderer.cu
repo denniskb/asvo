@@ -597,10 +597,10 @@ void Renderer::rasterize
 	}
 	else
 	{
-		cudaBindTextureToArray( tDiffuse, obj.data.diffuse.data, cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tIllum, obj.data.illum.data, cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tSpec, obj.data.spec.data, cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tNormal, obj.data.normal.data, cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tDiffuse, obj.data.diffuse->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tIllum, obj.data.illum->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tSpec, obj.data.spec->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tNormal, obj.data.normal->data(), cudaCreateChannelDesc< uchar4 >() );
 
 		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
