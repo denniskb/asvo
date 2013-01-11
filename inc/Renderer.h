@@ -32,11 +32,11 @@ private:
 	int m_frameHeight;
 	bool m_shadowMapping;
 
-	thrust::device_vector< BFSJob > m_jobQueue;
+	thrust::device_vector< BFSJob > m_dJobQueue;
 
-	thrust::device_vector< unsigned int > m_depthBuffer;
-	thrust::device_vector< VoxelData > m_voxelBuffer;
-	thrust::device_vector< float > m_shadowMap;
+	thrust::device_vector< unsigned int > m_dDepthBuffer;
+	thrust::device_vector< VoxelData > m_dVoxelBuffer;
+	thrust::device_vector< float > m_dShadowMap;
 
 	void rasterize
 	(

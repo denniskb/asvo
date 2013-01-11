@@ -482,11 +482,11 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 {
 	// TODO: Dynamically resize queue if it gets too small instead of
 	// using a big conservative value
-	m_jobQueue.resize( 10000000 );
+	m_dJobQueue.resize( 10000000 );
 
-	m_depthBuffer.resize( resolution() );
-	m_voxelBuffer.resize( resolution() );
-	m_shadowMap.resize( resolution() );
+	m_dDepthBuffer.resize( resolution() );
+	m_dVoxelBuffer.resize( resolution() );
+	m_dShadowMap.resize( resolution() );
 
 	tDiffuse.normalized = true;
 	tDiffuse.filterMode = cudaFilterModeLinear;
@@ -592,13 +592,13 @@ void Renderer::rasterize
 			obj.data.dim,
 			obj.transform, cam.pos, cam.view, cam.projection,
 			obj.data.d_animation, obj.data.boneCount,
-			thrust::raw_pointer_cast( m_depthBuffer.data() ), thrust::raw_pointer_cast( m_voxelBuffer.data() ),
+			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
 			animationFrameIndex,
 			octreeLevel,
 			thrust::raw_pointer_cast( dStartIndex.data() ), thrust::raw_pointer_cast( dEndIndex.data() ),
 			thrust::raw_pointer_cast( dTravQueuePtr.data() ),
-			thrust::raw_pointer_cast( m_jobQueue.data() )
+			thrust::raw_pointer_cast( m_dJobQueue.data() )
 		);
 		
 		hStartIndex = hEndIndex;		
@@ -611,7 +611,7 @@ void Renderer::rasterize
 	(
 		(size_t *) 0,
 		tDepthBuffer,
-		(void *) thrust::raw_pointer_cast( m_depthBuffer.data() ),
+		(void *) thrust::raw_pointer_cast( m_dDepthBuffer.data() ),
 		cudaCreateChannelDesc< unsigned >(),
 		(size_t) ( resolution() * sizeof( unsigned int ) )
 	);
@@ -619,9 +619,9 @@ void Renderer::rasterize
 	{
 		drawShadowMap<<< nBlocks( resolution(), nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
 		(
-			thrust::raw_pointer_cast( m_depthBuffer.data() ), 
-			thrust::raw_pointer_cast( m_shadowMap.data() ), 
-			thrust::raw_pointer_cast( m_voxelBuffer.data() ),
+			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), 
+			thrust::raw_pointer_cast( m_dShadowMap.data() ), 
+			thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight
 		);
 	}
@@ -634,10 +634,10 @@ void Renderer::rasterize
 
 		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
-			thrust::raw_pointer_cast( m_depthBuffer.data() ),
+			thrust::raw_pointer_cast( m_dDepthBuffer.data() ),
 			outColorBuffer,
-			thrust::raw_pointer_cast( m_voxelBuffer.data() ),
-			thrust::raw_pointer_cast( m_shadowMap.data() ),
+			thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
+			thrust::raw_pointer_cast( m_dShadowMap.data() ),
 			m_frameWidth, m_frameHeight,
 			lightGetDir(),
 			lightGetCam().viewProjection,
@@ -670,13 +670,13 @@ void Renderer::clearColorBuffer( uchar4 * dpOutColorBuffer )
 void Renderer::clearDepthBuffer()
 {
 	unsigned int const depthBufferClearValue = std::numeric_limits< unsigned int >::max();
-	m_depthBuffer.assign( m_depthBuffer.size(), depthBufferClearValue );
+	m_dDepthBuffer.assign( m_dDepthBuffer.size(), depthBufferClearValue );
 }
 
 void Renderer::clearShadowMap()
 {
 	float const shadowMapClearValue = 1;
-	m_shadowMap.assign( m_shadowMap.size(), shadowMapClearValue );
+	m_dShadowMap.assign( m_dShadowMap.size(), shadowMapClearValue );
 }
 
 void Renderer::fillJobQueue( BFSJob const * dpJobs, int jobCount )
@@ -687,7 +687,7 @@ void Renderer::fillJobQueue( BFSJob const * dpJobs, int jobCount )
 	(
 		dpJobs,
 		jobCount, 
-		thrust::raw_pointer_cast( m_jobQueue.data() )
+		thrust::raw_pointer_cast( m_dJobQueue.data() )
 	);
 }
 
