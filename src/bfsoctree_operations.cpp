@@ -70,6 +70,7 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 
 	if (octree->d_jobs == NULL)
 	{
+		// TODO: Allocate on heap
 		BFSJob queue[10000];
 		for (unsigned long int i = 0; i < 8; ++i)
 		{
@@ -78,6 +79,7 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 		}
 
 		int level = 1, queueStart = 0, queueEnd = 8, queuePtr = 8;
+		// TODO: Test for level == nLevels
 		while ((queueEnd - queueStart) <= 512 || queueStart == queueEnd)
 		{
 			for (int i = queueStart; i < queueEnd; ++i)

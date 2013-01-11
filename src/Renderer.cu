@@ -52,21 +52,6 @@ static __device__ BFSJob jobInit
 	return result;
 }
 
-static __global__ void clearColorBufferKernel
-(
-	uchar4 * dpOutColorBuffer,
-	int frameResolution,
-	uchar4 clearValue
-)
-{
-	int threadIndex = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if( threadIndex < frameResolution )
-	{
-		dpOutColorBuffer[ threadIndex ] = clearValue;
-	}
-}
-
 /**
  * The main kernel responsible for rendering. Equivalent to the rasterizer plus vertex shader.
  * The kernel is invoked with as many threads as the job queue contains elements.
@@ -641,13 +626,13 @@ void Renderer::rasterize
 
 void Renderer::clearColorBuffer( uchar4 * dpOutColorBuffer )
 {
-	// TODO: Optimize exec. config.
-	int const nThreads = 192;
 	uchar4 const colorBufferClearValue = make_uchar4( 51, 51, 51, 255 );
-	clearColorBufferKernel<<< nBlocks( resolution(), nThreads ), nThreads >>>
-	(
-		dpOutColorBuffer,
-		resolution(),
+	thrust::device_ptr< uchar4 > wrappedPtr( dpOutColorBuffer );
+
+	thrust::fill
+	( 
+		wrappedPtr,
+		wrappedPtr + resolution(),
 		colorBufferClearValue
 	);
 }
