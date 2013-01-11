@@ -10,10 +10,6 @@
 // in the same .cu file.
 #include "math3d.cpp"
 
-#define QUEUE_LENGTH 10000000
-
-static __device__ BFSJob _queue[ QUEUE_LENGTH ];
-
 /* Textures */
 static texture< unsigned, cudaTextureType1D, cudaReadModeElementType > tDepthBuffer;
 static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tDiffuse;
@@ -59,14 +55,15 @@ static __device__ BFSJob jobInit
 static __global__ void fillJobQueueKernel
 (
 	BFSJob const * jobs,
-	int jobCount
+	int jobCount,
+	BFSJob * jobQueue
 )
 {
 	int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if( threadIndex < jobCount )
 	{
-		_queue[ threadIndex ] = jobs[ threadIndex ];
+		jobQueue[ threadIndex ] = jobs[ threadIndex ];
 	}
 }
 
@@ -127,7 +124,8 @@ static __global__ void traverse
 	int octreeLevel,
 	// TODO: Rename
 	int const * startIndex, int const * endIndex,
-	int * travQueuePtr
+	int * travQueuePtr,
+	BFSJob * jobQueue
 )
 {
 	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + ( * startIndex );	
@@ -143,7 +141,7 @@ static __global__ void traverse
 
 	if( index < ( * endIndex ) )
 	{
-		BFSJob job = _queue[index];
+		BFSJob job = jobQueue[ index ];
 		BFSInnerNode node;
 		node.childPtr = 0;
 		node.mask = 0;
@@ -210,8 +208,9 @@ static __global__ void traverse
 							
 		//viewing frustum + clockwise culling
 		node.vd.normal = d_vecMulM(node.vd.normal, world);
-		if ( ( * travQueuePtr ) < QUEUE_LENGTH - 100000 &&
-			-1.f <= center.x + dimVec.x && center.x - dimVec.x <= 1.f &&
+		// TODO: Add check whether adding the current node's children
+		// to the job queue would exceed the queue's size limit
+		if ( -1.f <= center.x + dimVec.x && center.x - dimVec.x <= 1.f &&
 			-1.f <= center.y + dimVec.x && center.y - dimVec.x <= 1.f &&
 			 0.f <= center.z + dimVec.x && center.z - dimVec.x <= 1.f &&
 			 ( octreeLevel <= 8 || d_vecDot( node.vd.normal, eyeVec ) >= -0.4f ))
@@ -266,8 +265,7 @@ static __global__ void traverse
 					y = 2 * job.y + ((w & 2u) >> 1);
 					z = 2 * job.z + ((w & 4u) >> 2);
 
-					_queue[index++] = jobInit(node.childPtr++,
-											  x, y, z);
+					jobQueue[ index++ ] = jobInit( node.childPtr++, x, y, z );
 				}
 			}				
 		}
@@ -482,6 +480,10 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 	m_frameHeight( frameHeightInPixels ),
 	m_shadowMapping( shadowMapping )
 {
+	// TODO: Dynamically resize queue if it gets too small instead of
+	// using a big conservative value
+	m_jobQueue.resize( 10000000 );
+
 	m_depthBuffer.resize( resolution() );
 	m_voxelBuffer.resize( resolution() );
 	m_shadowMap.resize( resolution() );
@@ -595,7 +597,8 @@ void Renderer::rasterize
 			animationFrameIndex,
 			octreeLevel,
 			thrust::raw_pointer_cast( dStartIndex.data() ), thrust::raw_pointer_cast( dEndIndex.data() ),
-			thrust::raw_pointer_cast( dTravQueuePtr.data() )
+			thrust::raw_pointer_cast( dTravQueuePtr.data() ),
+			thrust::raw_pointer_cast( m_jobQueue.data() )
 		);
 		
 		hStartIndex = hEndIndex;		
@@ -680,7 +683,12 @@ void Renderer::fillJobQueue( BFSJob const * dpJobs, int jobCount )
 {
 	// TODO: Optimize exec. config.
 	int const nThreads = 192;
-	fillJobQueueKernel<<< nBlocks( jobCount, nThreads ), nThreads >>>( dpJobs, jobCount );
+	fillJobQueueKernel<<< nBlocks( jobCount, nThreads ), nThreads >>>
+	(
+		dpJobs,
+		jobCount, 
+		thrust::raw_pointer_cast( m_jobQueue.data() )
+	);
 }
 
 
