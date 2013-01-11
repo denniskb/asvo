@@ -1,5 +1,7 @@
 #include "../inc/Renderer.h"
 
+#include <cstdint>
+
 #include "../inc/bfsoctree_operations.h"
 #include "../inc/light.h"
 
@@ -9,7 +11,6 @@
 #include "math3d.cpp"
 
 #define QUEUE_LENGTH 10000000
-#define INT_MAX_VALUE 4294967295ul
 
 static __device__ BFSJob _queue[QUEUE_LENGTH];
 
@@ -231,7 +232,7 @@ static __global__ void traverse
 			y = max(y, 0);
 			y = min(y, frameHeight - 1);		
 								
-			depth = center.z * INT_MAX_VALUE;
+			depth = center.z * INT_MAX;
 			index = x + y * frameWidth;
 
 			if ((dimVec.x > 1.f) && (z = d_getChildCountFromMask(node.mask)) != 0)
@@ -320,7 +321,9 @@ static __global__ void draw
 	float diffusePower
 )
 {
-	unsigned long int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX_VALUE, depth;
+	unsigned index = blockIdx.x * blockDim.x + threadIdx.x, index2;
+	unsigned minDepth = INT_MAX;
+	unsigned depth;
 	int startIndex, curIndex, x, y;
 	VoxelData vd, minVd;
 
@@ -354,7 +357,7 @@ static __global__ void draw
 			}
 		}
 		
-		if (minDepth < INT_MAX_VALUE)
+		if (minDepth < INT_MAX)
 		{
 			float4 color = make_float4(0.f, 0.f, 0.f, 0.f);			
 
@@ -437,7 +440,7 @@ static __global__ void drawShadowMap
 	int frameWidth, int frameHeight
 )
 {
-	unsigned long int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX_VALUE, depth;
+	unsigned int index = blockIdx.x * blockDim.x + threadIdx.x, index2, minDepth = INT_MAX, depth;
 	int startIndex, curIndex, x, y;
 	VoxelData vd;
 
@@ -468,9 +471,9 @@ static __global__ void drawShadowMap
 			}
 		}
 		
-		if (minDepth < INT_MAX_VALUE)
+		if (minDepth < INT_MAX)
 		{
-			float color = ((float)minDepth) / ((float)INT_MAX_VALUE);
+			float color = ((float)minDepth) / ((float)INT_MAX);
 			shadowMap[index] = color;
 		}
 	}
@@ -571,6 +574,7 @@ void Renderer::rasterize
 	int hStartIndex = 0;
 	int hEndIndex = obj.data.jobCount;
 
+	// TODO: Extract into DeviceQueue class
 	thrust::device_vector< int > dStartIndex( 1 );
 	thrust::device_vector< int > dEndIndex( 1 );
 	thrust::device_vector< int > dTravQueuePtr( 1 );
