@@ -52,21 +52,6 @@ static __device__ BFSJob jobInit
 	return result;
 }
 
-static __global__ void fillJobQueueKernel
-(
-	BFSJob const * jobs,
-	int jobCount,
-	BFSJob * jobQueue
-)
-{
-	int threadIndex = blockDim.x * blockIdx.x + threadIdx.x;
-
-	if( threadIndex < jobCount )
-	{
-		jobQueue[ threadIndex ] = jobs[ threadIndex ];
-	}
-}
-
 static __global__ void clearColorBufferKernel
 (
 	uchar4 * dpOutColorBuffer,
@@ -681,13 +666,12 @@ void Renderer::clearShadowMap()
 
 void Renderer::fillJobQueue( BFSJob const * dpJobs, int jobCount )
 {
-	// TODO: Optimize exec. config.
-	int const nThreads = 192;
-	fillJobQueueKernel<<< nBlocks( jobCount, nThreads ), nThreads >>>
+	cudaMemcpy
 	(
+		thrust::raw_pointer_cast( m_dJobQueue.data() ),
 		dpJobs,
-		jobCount, 
-		thrust::raw_pointer_cast( m_dJobQueue.data() )
+		jobCount * sizeof( BFSJob ),
+		cudaMemcpyDeviceToDevice
 	);
 }
 
