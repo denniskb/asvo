@@ -12,16 +12,14 @@
 
 #define QUEUE_LENGTH 10000000
 
-static __device__ BFSJob _queue[QUEUE_LENGTH];
+static __device__ BFSJob _queue[ QUEUE_LENGTH ];
 
-static texture<unsigned int, 1, cudaReadModeElementType> _depthBuffer;
-static cudaChannelFormatDesc _depthBufferDesc;
-
-static texture<uchar4, 2, cudaReadModeNormalizedFloat> _diffuse;
-static texture<uchar4, 2, cudaReadModeNormalizedFloat> _illum;
-static texture<uchar4, 2, cudaReadModeNormalizedFloat> _spec;
-static texture<uchar4, 2, cudaReadModeNormalizedFloat> _normal;
-static cudaChannelFormatDesc _mapDesc;
+/* Textures */
+static texture< unsigned, cudaTextureType1D, cudaReadModeElementType > tDepthBuffer;
+static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tDiffuse;
+static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tIllum;
+static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tSpec;
+static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tNormal;
 
 unsigned long int d_getChildCountFromMask( unsigned long int mask )
 {
@@ -339,7 +337,7 @@ static __global__ void draw
 		for (int i = 0; i < 9; ++i)
 		{
 			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);
-			if ((depth = tex1Dfetch(_depthBuffer, index2)) < minDepth)
+			if ((depth = tex1Dfetch(tDepthBuffer, index2)) < minDepth)
 			{		
 				vd = voxelBuffer[index2];				
 				if (fabsf(vd.pos.x - .5f - x) <= vd.pos.z)			
@@ -380,17 +378,17 @@ static __global__ void draw
 			if (minVd.center.z <= shadowMap[index2] + 0.01f) //not in shadow		
 			{
 				//normal mapping
-				tempf = tex2D(_normal, minVd.texCoord.x, minVd.texCoord.y);
+				tempf = tex2D(tNormal, minVd.texCoord.x, minVd.texCoord.y);
 				Vector3 tempv = d_vecCross(minVd.normal, minVd.tangent);
 				minVd.normal = d_vecNormalize(d_vecAddVec(d_vecMulS(minVd.normal, tempf.z),
 											  d_vecAddVec(d_vecMulS(minVd.tangent, tempf.x),
 														  d_vecMulS(tempv, tempf.y))));
 				
-				tempf = tex2D(_illum, minVd.texCoord.x, minVd.texCoord.y);				
+				tempf = tex2D(tIllum, minVd.texCoord.x, minVd.texCoord.y);				
 				float intensity = fmaxf(0.f, d_vecDot(minVd.normal, light));				
 				if (intensity > 0.f || diffusePower < 1.f)
 				{					
-					color = tex2D(_diffuse, minVd.texCoord.x, minVd.texCoord.y);
+					color = tex2D(tDiffuse, minVd.texCoord.x, minVd.texCoord.y);
 					color.x *= intensity * diffusePower + tempf.x + 1.0f - diffusePower;
 					color.y *= intensity * diffusePower + tempf.y + 1.0f - diffusePower;
 					color.z *= intensity * diffusePower + tempf.z + 1.0f - diffusePower;
@@ -400,7 +398,7 @@ static __global__ void draw
 				intensity = powf(fmaxf(0.f, d_vecDot(tempv, minVd.normal)), 32.f); 
 				if (intensity > 0.f)
 				{
-					tempf = tex2D(_spec, minVd.texCoord.x, minVd.texCoord.y);
+					tempf = tex2D(tSpec, minVd.texCoord.x, minVd.texCoord.y);
 					color.x += diffusePower * intensity * tempf.x;
 					color.y += diffusePower * intensity * tempf.y;
 					color.z += diffusePower * intensity * tempf.z;
@@ -408,8 +406,8 @@ static __global__ void draw
 			}
 			else
 			{
-				color = tex2D(_diffuse, minVd.texCoord.x, minVd.texCoord.y);
-				tempf = tex2D(_illum, minVd.texCoord.x, minVd.texCoord.y);				
+				color = tex2D(tDiffuse, minVd.texCoord.x, minVd.texCoord.y);
+				tempf = tex2D(tIllum, minVd.texCoord.x, minVd.texCoord.y);				
 				color.x *= tempf.x + 1.0f - diffusePower;
 				color.y *= tempf.y + 1.0f - diffusePower;
 				color.z *= tempf.z + 1.0f - diffusePower;
@@ -456,7 +454,7 @@ static __global__ void drawShadowMap
 		for (int i = 0; i < 9; ++i)
 		{
 			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);						
-			if ((depth = tex1Dfetch(_depthBuffer, index2)) < minDepth)
+			if ((depth = tex1Dfetch(tDepthBuffer, index2)) < minDepth)
 			{		
 				vd = voxelBuffer[index2];				
 				if (fabsf(vd.pos.x - .5f - x) <= vd.pos.z)				
@@ -488,24 +486,21 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 	m_voxelBuffer.resize( resolution() );
 	m_shadowMap.resize( resolution() );
 
-	_depthBufferDesc = cudaCreateChannelDesc<unsigned int>();
+	tDiffuse.normalized = true;
+	tDiffuse.filterMode = cudaFilterModeLinear;
+	tDiffuse.addressMode[0] = tDiffuse.addressMode[1] = cudaAddressModeWrap;
 
-	_mapDesc = cudaCreateChannelDesc<uchar4>();
-	_diffuse.normalized = true;
-	_diffuse.filterMode = cudaFilterModeLinear;
-	_diffuse.addressMode[0] = _diffuse.addressMode[1] = cudaAddressModeWrap;
+	tIllum.normalized = true;
+	tIllum.filterMode = cudaFilterModeLinear;
+	tIllum.addressMode[0] = tIllum.addressMode[1] = cudaAddressModeWrap;
 
-	_illum.normalized = true;
-	_illum.filterMode = cudaFilterModeLinear;
-	_illum.addressMode[0] = _illum.addressMode[1] = cudaAddressModeWrap;
+	tSpec.normalized = true;
+	tSpec.filterMode = cudaFilterModeLinear;
+	tSpec.addressMode[0] = tSpec.addressMode[1] = cudaAddressModeWrap;
 
-	_spec.normalized = true;
-	_spec.filterMode = cudaFilterModeLinear;
-	_spec.addressMode[0] = _spec.addressMode[1] = cudaAddressModeWrap;
-
-	_normal.normalized = true;
-	_normal.filterMode = cudaFilterModeLinear;
-	_normal.addressMode[0] = _normal.addressMode[1] = cudaAddressModeWrap;
+	tNormal.normalized = true;
+	tNormal.filterMode = cudaFilterModeLinear;
+	tNormal.addressMode[0] = tNormal.addressMode[1] = cudaAddressModeWrap;
 }
 
 
@@ -612,9 +607,9 @@ void Renderer::rasterize
 	cudaBindTexture
 	(
 		(size_t *) 0,
-		_depthBuffer,
+		tDepthBuffer,
 		(void *) thrust::raw_pointer_cast( m_depthBuffer.data() ),
-		_depthBufferDesc,
+		cudaCreateChannelDesc< unsigned >(),
 		(size_t) ( resolution() * sizeof( unsigned int ) )
 	);
 	if( shadowPass )
@@ -629,10 +624,10 @@ void Renderer::rasterize
 	}
 	else
 	{
-		cudaBindTextureToArray(_diffuse, obj.data.diffuse.data, _mapDesc);
-		cudaBindTextureToArray(_illum, obj.data.illum.data, _mapDesc);
-		cudaBindTextureToArray(_spec, obj.data.spec.data, _mapDesc);
-		cudaBindTextureToArray(_normal, obj.data.normal.data, _mapDesc);
+		cudaBindTextureToArray( tDiffuse, obj.data.diffuse.data, cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tIllum, obj.data.illum.data, cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tSpec, obj.data.spec.data, cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tNormal, obj.data.normal.data, cudaCreateChannelDesc< uchar4 >() );
 
 		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
@@ -646,12 +641,12 @@ void Renderer::rasterize
 			lightGetDiffusePower()
 		);
 
-		cudaUnbindTexture( _diffuse );
-		cudaUnbindTexture( _illum );
-		cudaUnbindTexture( _spec );
-		cudaUnbindTexture( _normal );
+		cudaUnbindTexture( tDiffuse );
+		cudaUnbindTexture( tIllum );
+		cudaUnbindTexture( tSpec );
+		cudaUnbindTexture( tNormal );
 	}
-	cudaUnbindTexture( _depthBuffer );
+	cudaUnbindTexture( tDepthBuffer );
 }
 
 
