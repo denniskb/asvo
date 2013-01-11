@@ -37,7 +37,7 @@ Texture::Texture( char const * fileName, int width, int height ) :
 			);
 		}
 
-		const cudaChannelFormatDesc desc = cudaCreateChannelDesc< uchar4 >();
+		cudaChannelFormatDesc desc = cudaCreateChannelDesc< uchar4 >();
 		cudaMallocArray( & m_pData, & desc, width, height );
 		cudaMemcpyToArray( m_pData, 0, 0, & hImgRGBA[ 0 ], resolution * sizeof( uchar4 ), cudaMemcpyHostToDevice );
 	}
@@ -90,8 +90,13 @@ void Texture::copyFrom( Texture const & other )
 
 	m_width = other.width();
 	m_height = other.height();
-
 	int resolution = m_width * m_height;
+
+	cudaFreeArray( m_pData );
+
+	cudaChannelFormatDesc desc = cudaCreateChannelDesc< uchar4 >();
+	cudaMallocArray( & m_pData, & desc, m_width, m_height );
+
 	cudaMemcpyArrayToArray
 	(
 		m_pData, 0, 0,
