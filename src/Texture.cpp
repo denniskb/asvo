@@ -43,7 +43,8 @@ Texture::Texture( char const * fileName, int width, int height ) :
 	}
 }
 
-Texture::Texture( Texture const & copy )
+Texture::Texture( Texture const & copy ) :
+	m_pData( nullptr )
 {
 	copyFrom( copy );
 }
@@ -92,7 +93,10 @@ void Texture::copyFrom( Texture const & other )
 	m_height = other.height();
 	int resolution = m_width * m_height;
 
-	cudaFreeArray( m_pData );
+	if( m_pData != nullptr )
+	{
+		cudaFreeArray( m_pData );
+	}
 
 	cudaChannelFormatDesc desc = cudaCreateChannelDesc< uchar4 >();
 	cudaMallocArray( & m_pData, & desc, m_width, m_height );
