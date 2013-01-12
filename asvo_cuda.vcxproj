@@ -99,7 +99,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\camera.h" />
     <ClInclude Include="inc\camera_operations.h" />
     <ClInclude Include="inc\glue.h" />
-    <ClInclude Include="inc\light.h" />
+    <ClInclude Include="inc\Light.h" />
     <ClInclude Include="inc\math3d.h" />
     <ClInclude Include="inc\matrix.h" />
     <ClInclude Include="inc\object3d.h" />
@@ -117,7 +117,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClCompile Include="src\bfsoctree_operations.cpp" />
     <ClCompile Include="src\camera_operations.cpp" />
     <ClCompile Include="src\glue.cpp" />
-    <ClCompile Include="src\light.cpp" />
+    <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\math3d.cpp" />
     <ClCompile Include="src\object3d_operations.cpp" />

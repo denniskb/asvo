@@ -12,6 +12,7 @@
 
 #include "object3d.h"
 
+class Light;
 class Renderer;
 
 /**
@@ -37,7 +38,8 @@ bool glueInit
     unsigned short int windowHeight,
     int argc, char **argv,
     Renderer * pRenderer,
-	Object3d obj
+	Object3d obj,
+	Light const & light
 );
 
 /**

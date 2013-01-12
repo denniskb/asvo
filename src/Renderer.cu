@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #include "../inc/bfsoctree_operations.h"
-#include "../inc/light.h"
+#include "../inc/Light.h"
 
 // Include the implementations of all math functions.
 // CUDA requires that function declarations and definitions are
@@ -481,6 +481,7 @@ void Renderer::render
 (
 	Object3d & obj,
 	Camera const & cam,
+	Light const & light,
 
 	uchar4 * outColorBuffer
 )
@@ -496,7 +497,8 @@ void Renderer::render
 		rasterize
 		( 
 			obj, 
-			lightGetCam(),
+			light.camera(),
+			light,
 			animationFrameIndex,
 		
 			true,
@@ -517,6 +519,7 @@ void Renderer::render
 	( 
 		obj, 
 		cam,
+		light,
 		animationFrameIndex,
 		
 		false,
@@ -531,6 +534,7 @@ void Renderer::rasterize
 (
 	Object3d const & obj,
 	Camera const & cam,
+	Light const & light,
 	int animationFrameIndex,
 
 	bool shadowPass,
@@ -609,9 +613,9 @@ void Renderer::rasterize
 			thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			thrust::raw_pointer_cast( m_dShadowMap.data() ),
 			m_frameWidth, m_frameHeight,
-			lightGetDir(),
-			lightGetCam().viewProjection,
-			lightGetDiffusePower()
+			light.direction(),
+			light.camera().viewProjection,
+			light.diffusePower()
 		);
 
 		cudaUnbindTexture( tDiffuse );

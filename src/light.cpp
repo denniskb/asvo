@@ -1,45 +1,48 @@
-#include "../inc/light.h"
+#include "../inc/Light.h"
 
-#include "../inc/camera.h"
-#include "../inc/camera_operations.h"
 #include "../inc/math3d.h"
-#include "../inc/vector3.h"
 
-static Vector3 _light = UNIT_Y;
-static float _diffuse = 0.f;
-static float _ambient = 0.f;
-
-void lightSet(Vector3 light, float diffusePower)
+Light::Light()
 {
-	Vector3 newLight = { -light.x, -light.y, -light.z };
-	_light = h_vecNormalize(newLight);
-	_diffuse = diffusePower;
-	_ambient = 1.0f - diffusePower;
+
 }
 
-Camera lightGetCam(void)
+Light::Light( Vector3 position, float diffusePower ) :
+	m_direction( h_vecNormalize( h_vecNegate( position ) ) ),
+	m_diffusePower( diffusePower )
+{
+
+}
+
+
+
+Vector3 Light::direction() const
+{
+	return m_direction;
+}
+	
+
+
+float Light::diffusePower() const
+{
+	return m_diffusePower;
+}
+
+float Light::ambientPower() const
+{
+	return 1.0 - m_diffusePower;
+}
+
+
+
+Camera Light::camera() const
 {
 	Camera result;
 
-	result.pos = h_vecMulS(_light, 50.0f);
-	result.view = h_createCam(result.pos, ZERO, UNIT_Y);
-	result.projection = h_createOrthographic(100, 100, 10.f, 200.f);
-	result.viewProjection = h_mMulM(result.view, result.projection);
+	result.pos = h_vecMulS( m_direction, 50.0f );
+	result.view = h_createCam( result.pos, ZERO, UNIT_Y );
+	result.projection = h_createOrthographic( 100, 100, 10.f, 200.f );
+	result.viewProjection = h_mMulM( result.view, result.projection );
 
 	return result;
-}
-
-Vector3 lightGetDir(void)
-{
-	return _light;
-}
-
-float lightGetDiffusePower(void)
-{
-	return _diffuse;
-}
-
-float lightGetAmbientPower(void)
-{
-	return _ambient;
 }

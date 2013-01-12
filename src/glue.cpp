@@ -12,7 +12,7 @@
 #include <helper_cuda.h>
 
 #include "../inc/camera_operations.h"
-#include "../inc/light.h"
+#include "../inc/Light.h"
 #include "../inc/Renderer.h"
 
 static int _argc;
@@ -24,6 +24,7 @@ static GLuint _pbo;
 static GLuint _texture;
 static Renderer * _pRenderer;
 static Object3d _obj;
+static Light _light;
 
 /*
  * Creates a window and sets up the viewport.
@@ -75,7 +76,8 @@ bool glueInit
     unsigned short int windowHeight,
     int argc, char **argv,
     Renderer * pRenderer,
-	Object3d obj
+	Object3d obj,
+	Light const & light
 )
 {
 	_argc = argc;
@@ -84,6 +86,7 @@ bool glueInit
 	_windowHeight = windowHeight;
 	_pRenderer = pRenderer;
 	_obj = obj;
+	_light = light;
 
 	if (!initGL())
 		return false;
@@ -188,7 +191,8 @@ static void displayFuncDummy(void)
 		(
 			_obj,
 			camGet(),
-			
+			_light,
+
 			dptr
 		);
 	}

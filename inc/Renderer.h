@@ -4,6 +4,7 @@
 #include <vector_types.h>
 
 #include "camera.h"
+#include "Light.h"
 #include "matrix.h"
 #include "object3d.h"
 #include "voxeldata.h"
@@ -18,6 +19,7 @@ public:
 	(
 		Object3d & obj,
 		Camera const & cam,
+		Light const & light,
 		
 		uchar4 * outColorBuffer
 	);
@@ -46,6 +48,7 @@ private:
 	(
 		Object3d const & obj,
 		Camera const & cam,
+		Light const & light,
 		int animationFrameIndex,
 
 		bool shadowPass,

@@ -10,7 +10,7 @@
 #include "../inc/bfsoctree_operations.h"
 #include "../inc/camera_operations.h"
 #include "../inc/glue.h"
-#include "../inc/light.h"
+#include "../inc/Light.h"
 #include "../inc/math3d.h"
 #include "../inc/object3d.h"
 #include "../inc/object3d_operations.h"
@@ -47,8 +47,13 @@ int main(int argc, char **argv)
 	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
 	BFSOctreeCopyToDevice(&imrod.data);
 
+	// Set up the light.
+	Vector3 lightPosition = { -1.f, -0.5f, 0.5f };
+	float lightDiffusePower = 0.8;
+	Light light( lightPosition, lightDiffusePower );
+
 	// Initialize the GLUT framework.
-	if (!glueInit(frameWidthInPixels, frameHeightInPixels, argc, argv, pRenderer.get(), imrod))
+	if ( ! glueInit( frameWidthInPixels, frameHeightInPixels, argc, argv, pRenderer.get(), imrod, light ) )
 	{
 		return 1;
 	}
@@ -58,10 +63,6 @@ int main(int argc, char **argv)
 	Vector3 lookAt = { 0.f, 0.f, 0.f };	
 	camInit(pos, lookAt, 
 			1.f, glueGetWindowRatio(), 10.f, 200.f);
-
-	// Set up the light.
-	Vector3 light = { -1.f, -0.5f, 0.5f };
-	lightSet(light, 0.8f);	
 
 	// Start the main render-and-update loop
 	// FIXME: App crashes if we omit the following call
