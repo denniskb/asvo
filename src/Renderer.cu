@@ -564,7 +564,7 @@ void Renderer::rasterize
 			obj.data.d_innerNodes,
 			obj.data.d_leaves,
 			obj.data.dim,
-			obj.transform, cam.pos, cam.view, cam.projection,
+			obj.transform, cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
 			obj.data.d_animation, obj.data.boneCount,
 			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
@@ -614,7 +614,7 @@ void Renderer::rasterize
 			thrust::raw_pointer_cast( m_dShadowMap.data() ),
 			m_frameWidth, m_frameHeight,
 			light.direction(),
-			light.camera().viewProjection,
+			light.camera().viewProjectionMatrix(),
 			light.diffusePower()
 		);
 

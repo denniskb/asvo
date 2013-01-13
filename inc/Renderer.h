@@ -3,7 +3,7 @@
 #include <thrust/device_vector.h>
 #include <vector_types.h>
 
-#include "camera.h"
+#include "Camera.h"
 #include "Light.h"
 #include "matrix.h"
 #include "object3d.h"

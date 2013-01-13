@@ -8,7 +8,6 @@
 #include <helper_cuda.h>
 
 #include "../inc/bfsoctree_operations.h"
-#include "../inc/camera_operations.h"
 #include "../inc/glue.h"
 #include "../inc/Light.h"
 #include "../inc/math3d.h"
@@ -59,10 +58,11 @@ int main(int argc, char **argv)
 	}
 
 	// Set up the camera.
-	Vector3 pos = { 0.f, 25.f, -100.f };
+	Vector3 position = { 0.f, 25.f, -100.f };
 	Vector3 lookAt = { 0.f, 0.f, 0.f };	
-	camInit(pos, lookAt, 
-			1.f, glueGetWindowRatio(), 10.f, 200.f);
+	float fov = 1;
+	Camera camera( position, lookAt, fov, glueGetWindowRatio(), 10, 200 );
+	Camera::setGlobalCamera( camera );
 
 	// Start the main render-and-update loop
 	// FIXME: App crashes if we omit the following call

@@ -37,12 +37,9 @@ float Light::ambientPower() const
 
 Camera Light::camera() const
 {
-	Camera result;
-
-	result.pos = h_vecMulS( m_direction, 50.0f );
-	result.view = h_createCam( result.pos, ZERO, UNIT_Y );
-	result.projection = h_createOrthographic( 100, 100, 10.f, 200.f );
-	result.viewProjection = h_mMulM( result.view, result.projection );
-
-	return result;
+	return Camera
+	(
+		h_vecMulS( m_direction, 50.0f ), ZERO,
+		h_createOrthographic( 100, 100, 10.f, 200.f )
+	);
 }

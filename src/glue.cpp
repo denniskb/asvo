@@ -11,7 +11,6 @@
 #include <cuda_gl_interop.h>
 #include <helper_cuda.h>
 
-#include "../inc/camera_operations.h"
 #include "../inc/Light.h"
 #include "../inc/Renderer.h"
 
@@ -147,8 +146,8 @@ static bool initGL(void)
 	glutInitWindowPosition( 50, 50 );
 	glutCreateWindow("asvo@cuda");	
 	glutDisplayFunc(displayFuncDummy);
-	glutMouseFunc(mouseFunc);
-	glutMotionFunc(motionFunc);
+	glutMouseFunc( Camera::mouseFunc );
+	glutMotionFunc( Camera::motionFunc );
 
 	glewInit();
 	if (! glewIsSupported( "GL_VERSION_2_0 " ) ) {
@@ -177,7 +176,7 @@ static void displayFuncDummy(void)
 	QueryPerformanceCounter( & start );
 	uchar4 *dptr = NULL;
 
-	camUpdate(glueGetLastFrameTime());
+	Camera::globalCamera().update( glueGetLastFrameTime() );
 
 	// map OpenGL buffer object for writing from CUDA on a single GPU
 	// no data is moved (Win & Linux). When mapped to CUDA, OpenGL
@@ -190,7 +189,7 @@ static void displayFuncDummy(void)
 		_pRenderer->render
 		(
 			_obj,
-			camGet(),
+			Camera::globalCamera(),
 			_light,
 
 			dptr
