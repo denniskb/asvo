@@ -12,7 +12,7 @@ public:
 	Camera
 	(
 		Vector3 const & position, Vector3 const & lookAt,
-        float fov, float aspectRatio,
+		float fov, float aspectRatio,
 		float nearPlane, float farPlane
 	);
 
