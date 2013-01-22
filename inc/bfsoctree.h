@@ -6,7 +6,7 @@
 
 #include "bfsinnernode.h"
 #include "bfsleaf.h"
-#include "bfsjob.h"
+#include "BFSJob.h"
 #include "matrix.h"
 #include "Texture.h"
 

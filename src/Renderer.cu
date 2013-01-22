@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "../inc/BFSJob.cuh"
 #include "../inc/bfsoctree_operations.h"
 #include "../inc/Light.h"
 
@@ -27,29 +28,6 @@ unsigned long int d_getChildCountFromMask( unsigned long int mask )
           ((  32ul & mask ) >> 5 ) +
           ((  64ul & mask ) >> 6 ) +
           (( 128ul & mask ) >> 7 );
-}
-
-/**
- * Initializes a BFSJob.
- *
- * @param index The index of the voxel.
- * @param x     The x-coordinate of the voxel.
- * @param y     The y-coordinate of the voxel.
- * @param z     The z-coordinate of the voxel.
- *
- * @return A BFSJob representing the specified voxel that can
- *         be processed by the GPU.
- */
-static __device__ BFSJob jobInit
-(
-	unsigned long int index,
-    unsigned short int x,
-    unsigned short int y,
-    unsigned short int z
-)
-{
-	BFSJob result = { index, x, y, z };
-	return result;
 }
 
 /**
@@ -235,7 +213,7 @@ static __global__ void traverse
 					y = 2 * job.y + ((w & 2u) >> 1);
 					z = 2 * job.z + ((w & 4u) >> 2);
 
-					jobQueue[ index++ ] = jobInit( node.childPtr++, x, y, z );
+					jobQueue[ index++ ] = dmake_BFSJob( node.childPtr++, x, y, z );
 				}
 			}				
 		}

@@ -74,8 +74,13 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 		BFSJob queue[10000];
 		for (unsigned long int i = 0; i < 8; ++i)
 		{
-			BFSJob job = { i + 1, i & 1ul, (i & 2ul) >> 1, (i & 4ul) >> 2 };
-			queue[i] = job;
+			queue[i] = make_BFSJob
+			( 
+				i + 1, 
+				i & 1ul, 
+				( i & 2ul ) >> 1, 
+				( i & 4ul ) >> 2 
+			);
 		}
 
 		int level = 1, queueStart = 0, queueEnd = 8, queuePtr = 8;
@@ -91,12 +96,13 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 				{
 					if ((node.mask & (1ul << j)) != 0)
 					{						
-						BFSJob iJob = { node.childPtr + childIndex,
-									    2 * job.x + (j & 1u),
-									    2 * job.y + ((j & 2u) >> 1),
-									    2 * job.z + ((j & 4u) >> 2)};
-
-						queue[queuePtr++] = iJob;
+						queue[queuePtr++] = make_BFSJob
+						( 
+							node.childPtr + childIndex,
+						    2 * job.x + ( j & 1u ),
+						    2 * job.y + ( ( j & 2u ) >> 1 ),
+						    2 * job.z + ( ( j & 4u ) >> 2 )
+						);
 						++childIndex;
 					}
 				}

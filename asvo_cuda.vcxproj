@@ -53,6 +53,7 @@
     <CudaCompile>
       <Include>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</Include>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <MaxRegCount>40</MaxRegCount>
     </CudaCompile>
     <PostBuildEvent>
       <Command>copy $(SolutionDir)lib\$(Platform)\$(Configuration)\freeglut.dll $(SolutionDir)$(Platform)\$(Configuration)\freeglut.dll
@@ -81,6 +82,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <CudaCompile>
       <Include>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</Include>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <MaxRegCount>0</MaxRegCount>
     </CudaCompile>
     <PostBuildEvent>
       <Command>copy $(SolutionDir)lib\$(Platform)\$(Configuration)\freeglut.dll $(SolutionDir)$(Platform)\$(Configuration)\freeglut.dll
@@ -92,7 +94,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="inc\bfsinnernode.h" />
-    <ClInclude Include="inc\bfsjob.h" />
+    <ClInclude Include="inc\BFSJob.h" />
     <ClInclude Include="inc\bfsleaf.h" />
     <ClInclude Include="inc\bfsoctree.h" />
     <ClInclude Include="inc\bfsoctree_operations.h" />
@@ -113,6 +115,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\BFSJob.cpp" />
     <ClCompile Include="src\bfsoctree_operations.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glue.cpp" />
@@ -125,6 +128,9 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Renderer.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="inc\BFSJob.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
