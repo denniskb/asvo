@@ -28,7 +28,6 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	result.leaves = (BFSLeaf*) malloc(result.leafCount * sizeof(BFSLeaf));
 	result.d_innerNodes = NULL;
 	result.d_leaves = NULL;
-	result.d_jobs = NULL;
 
 	fread(result.innerNodes, sizeof(BFSInnerNode), result.innerNodeCount, file);	
 
@@ -68,9 +67,12 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 		cudaMemcpy(octree->d_leaves, octree->leaves, octree->leafCount * sizeof(BFSLeaf), cudaMemcpyHostToDevice);
 	}
 
-	if (octree->d_jobs == NULL)
+	octree->d_jobs.reset( new thrust::device_vector< BFSJob >() );
+
+	if( octree->d_jobs->empty() )
 	{
 		// TODO: Allocate on heap
+		// TODO: Make this a thrust::host_vector
 		BFSJob queue[10000];
 		for (unsigned long int i = 0; i < 8; ++i)
 		{
@@ -112,8 +114,16 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 			queueEnd = queuePtr;			
 		}
 		
-		cudaMalloc((void**) &(octree->d_jobs), (queueEnd - queueStart) * sizeof(BFSJob));	
-		cudaMemcpy(octree->d_jobs, queue + queueStart, (queueEnd - queueStart) * sizeof(BFSJob), cudaMemcpyHostToDevice);
+		//cudaMalloc((void**) &(octree->d_jobs), (queueEnd - queueStart) * sizeof(BFSJob));	
+		//cudaMemcpy(octree->d_jobs, queue + queueStart, (queueEnd - queueStart) * sizeof(BFSJob), cudaMemcpyHostToDevice);
+		octree->d_jobs->resize( queueEnd - queueStart );
+		cudaMemcpy
+		(
+			thrust::raw_pointer_cast( octree->d_jobs->data() ),
+			queue + queueStart,
+			( queueEnd - queueStart ) * sizeof( BFSJob ),
+			cudaMemcpyHostToDevice
+		);
 		octree->jobCount = queueEnd - queueStart;	
 		octree->level = level;
 	}
@@ -149,12 +159,14 @@ void BFSOctreeCleanup(BFSOctree *octree)
 		cudaFree(octree->d_leaves);
 		octree->d_leaves = NULL;
 	}
-	if (octree->d_jobs != NULL)
+
+	if( octree->d_jobs.get() != nullptr )
 	{
-		cudaFree(octree->d_jobs);
-		octree->d_jobs = NULL;
+		octree->d_jobs->clear();
+		octree->d_jobs.reset< thrust::device_vector< BFSJob > >( nullptr );
 		octree->jobCount = 0;
 	}
+	
 	if (octree->animation != NULL)
 	{
 		free(octree->animation);

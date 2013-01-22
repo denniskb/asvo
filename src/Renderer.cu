@@ -468,7 +468,7 @@ void Renderer::render
 
 	if( m_shadowMapping )
 	{
-		fillJobQueue( obj.data.d_jobs, obj.data.jobCount );
+		fillJobQueue( thrust::raw_pointer_cast( obj.data.d_jobs->data() ), obj.data.jobCount );
 		clearDepthBuffer();
 		clearShadowMap();
 
@@ -485,7 +485,7 @@ void Renderer::render
 		);
 	}
 
-	fillJobQueue( obj.data.d_jobs, obj.data.jobCount );
+	fillJobQueue( thrust::raw_pointer_cast( obj.data.d_jobs->data() ), obj.data.jobCount );
 	clearColorBuffer( outColorBuffer );
 	clearDepthBuffer();
 	if( ! m_shadowMapping )

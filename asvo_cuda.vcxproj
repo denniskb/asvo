@@ -116,7 +116,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BFSJob.cpp" />
-    <ClCompile Include="src\bfsoctree_operations.cpp" />
+    <CudaCompile Include="src\bfsoctree_operations.cu" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glue.cpp" />
     <ClCompile Include="src\Light.cpp" />
