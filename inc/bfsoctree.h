@@ -17,7 +17,6 @@
 typedef struct
 {
 	BFSInnerNode *innerNodes;
-	VisualData * leaves;
 	BFSInnerNode *d_innerNodes;
 	VisualData * d_leaves;
 	// HACK: Use of managed ptr to defer initialization (we have hidden copies of BFSOctree)
