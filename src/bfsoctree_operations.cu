@@ -34,8 +34,8 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	fread(&result.frameCount, 4, 1, file);
 	fread(&result.boneCount, 4, 1, file);
 
-	result.animation = (Matrix*) malloc(result.frameCount * result.boneCount * sizeof(Matrix));
-	fread(result.animation, sizeof(Matrix), result.frameCount * result.boneCount, file);
+	std::vector< Matrix > animation( result.frameCount * result.boneCount );
+	fread( & animation[ 0 ], sizeof( Matrix ), result.frameCount * result.boneCount, file );
 	result.d_animation = NULL;
 
 	fclose(file);
@@ -123,8 +123,8 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 	if (result.d_animation == NULL)
 	{
-		cudaMalloc((void**) &(result.d_animation), result.frameCount * result.boneCount * sizeof(Matrix));	
-		cudaMemcpy(result.d_animation, result.animation, result.frameCount * result.boneCount * sizeof(Matrix), cudaMemcpyHostToDevice);
+		cudaMalloc( ( void ** ) &( result.d_animation ), result.frameCount * result.boneCount * sizeof( Matrix ) );	
+		cudaMemcpy( result.d_animation, & animation[ 0 ], result.frameCount * result.boneCount * sizeof( Matrix ), cudaMemcpyHostToDevice );
 	}
 
 	return result;
@@ -137,6 +137,7 @@ void BFSOctreeCleanup(BFSOctree *octree)
 		cudaFree(octree->d_innerNodes);
 		octree->d_innerNodes = NULL;
 	}
+
 	if (octree->d_leaves != NULL)
 	{
 		cudaFree(octree->d_leaves);
@@ -150,18 +151,13 @@ void BFSOctreeCleanup(BFSOctree *octree)
 		octree->jobCount = 0;
 	}
 	
-	if (octree->animation != NULL)
-	{
-		free(octree->animation);
-		octree->animation = NULL;
-		octree->frameCount = octree->boneCount = 0;
-	}
 	if (octree->d_animation != NULL)
 	{
 		cudaFree(octree->d_animation);
 		octree->d_animation = NULL;
 		octree->frameCount = octree->boneCount = 0;
 	}
+
 	if (octree->currentFrame != NULL)
 	{
 		free(octree->currentFrame);
