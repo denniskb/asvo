@@ -38,8 +38,7 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 	fclose(file);
 
-	result.currentFrame = ( double * ) malloc( sizeof( double ) );
-	*( result.currentFrame ) = 0.0;
+	result.currentFrame = 0.0;
 
 	// TODO: Replace hard-coded values
 	result.diffuse.reset( new Texture( diffuse, 1024, 1024 ) );
@@ -122,9 +121,6 @@ void BFSOctreeCleanup(BFSOctree *octree)
 	octree->d_animation.reset< thrust::device_vector< Matrix > >( nullptr );
 	octree->frameCount = octree->boneCount = 0;
 
-	free(octree->currentFrame);
-	octree->currentFrame = NULL;
-
 	octree->diffuse.reset< Texture >( nullptr );
 	octree->illum.reset< Texture >( nullptr );
 	octree->spec.reset< Texture >( nullptr );
@@ -143,8 +139,8 @@ unsigned long int h_getChildCountFromMask(unsigned long int mask)
 		  ((128ul & mask) >> 7);
 }
 
-unsigned short int BFSOctreeUpdate(BFSOctree *octree)
+unsigned short int BFSOctreeUpdate( BFSOctree * octree )
 {
-	*octree->currentFrame += glueGetLastFrameTime();
-	return (int)(*octree->currentFrame * 0.06) % octree->frameCount;
+	octree->currentFrame += glueGetLastFrameTime();
+	return (int)( octree->currentFrame * 0.06 ) % octree->frameCount;
 }

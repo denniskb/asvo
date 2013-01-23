@@ -30,7 +30,7 @@ typedef struct
 	float dim;
 	unsigned long int frameCount;
 	unsigned long int boneCount;
-	double *currentFrame;
+	double currentFrame;
 
 	// HACK: Prevents us from unnecessarily copying textures but
 	// forces all BFSOctrees to share one set of textures.
