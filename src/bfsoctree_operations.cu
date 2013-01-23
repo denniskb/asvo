@@ -23,13 +23,12 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	fread(&result.innerNodeCount, 4, 1, file);
 	fread(&result.leafCount, 4, 1, file);
 
-	result.innerNodes = (BFSInnerNode*) malloc(result.innerNodeCount * sizeof(BFSInnerNode));
+	std::vector< BFSInnerNode > innerNodes( result.innerNodeCount );
 	std::vector< VisualData > leaves( result.leafCount );
 	result.d_innerNodes = NULL;
 	result.d_leaves = NULL;
 
-	fread(result.innerNodes, sizeof(BFSInnerNode), result.innerNodeCount, file);	
-
+	fread( & innerNodes[ 0 ], sizeof( BFSInnerNode ), result.innerNodeCount, file );
 	fread( & leaves[ 0 ], sizeof( VisualData ), result.leafCount, file );
 
 	fread(&result.frameCount, 4, 1, file);
@@ -54,8 +53,8 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 	if (result.d_innerNodes == NULL)
 	{
-		cudaMalloc((void**) &(result.d_innerNodes), result.innerNodeCount * sizeof(BFSInnerNode));	
-		cudaMemcpy(result.d_innerNodes, result.innerNodes, result.innerNodeCount * sizeof(BFSInnerNode), cudaMemcpyHostToDevice);
+		cudaMalloc( ( void ** ) &( result.d_innerNodes ), result.innerNodeCount * sizeof( BFSInnerNode ) );
+		cudaMemcpy( result.d_innerNodes, & innerNodes[ 0 ], result.innerNodeCount * sizeof( BFSInnerNode ), cudaMemcpyHostToDevice );
 	}
 	if (result.d_leaves == NULL)
 	{
@@ -88,7 +87,7 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 			for (int i = queueStart; i < queueEnd; ++i)
 			{
 				BFSJob job = queue[i];
-				BFSInnerNode node = result.innerNodes[job.index];				
+				BFSInnerNode node = innerNodes[ job.index ];				
 				unsigned char childIndex = 0;
 				for (unsigned int j = 0; j < 8; ++j)
 				{
@@ -133,12 +132,6 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 void BFSOctreeCleanup(BFSOctree *octree)
 {
-	if (octree->innerNodes != NULL)
-	{
-		free(octree->innerNodes);
-		octree->innerNodes = NULL;
-		octree->innerNodeCount = 0;
-	}
 	if (octree->d_innerNodes != NULL)
 	{
 		cudaFree(octree->d_innerNodes);
