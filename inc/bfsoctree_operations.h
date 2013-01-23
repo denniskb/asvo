@@ -21,14 +21,6 @@
 BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * illum, char const * spec, char const * normal);
 
 /**
- * Copies the octree's nodes to the device and stores a pointer to them inside
- * the octree.
- *
- * @param octree The BFSOctree to be copied to the device.
- */
-void BFSOctreeCopyToDevice(BFSOctree *octree);
-
-/**
  * Does cleanup work like releasing allocated memory.
  *
  * @param octree The BFSOctree to be cleaned up.

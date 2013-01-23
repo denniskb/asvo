@@ -44,7 +44,6 @@ int main(int argc, char **argv)
 
 	Vector3 rotAxis = { 1.f, 0.f, 0.f };
 	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
-	BFSOctreeCopyToDevice(&imrod.data);
 
 	// Set up the light.
 	Vector3 lightPosition = { -1.f, -0.5f, 0.5f };

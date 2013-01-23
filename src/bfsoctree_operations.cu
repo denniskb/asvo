@@ -50,25 +50,22 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	result.spec.reset( new Texture( spec, 1024, 1024 ) );
 	result.normal.reset( new Texture( normal, 1024, 1024 ) );
 
-	return result;
-}
+	/* Copy data to device */
 
-void BFSOctreeCopyToDevice(BFSOctree *octree)
-{
-	if (octree->d_innerNodes == NULL)
+	if (result.d_innerNodes == NULL)
 	{
-		cudaMalloc((void**) &(octree->d_innerNodes), octree->innerNodeCount * sizeof(BFSInnerNode));	
-		cudaMemcpy(octree->d_innerNodes, octree->innerNodes, octree->innerNodeCount * sizeof(BFSInnerNode), cudaMemcpyHostToDevice);
+		cudaMalloc((void**) &(result.d_innerNodes), result.innerNodeCount * sizeof(BFSInnerNode));	
+		cudaMemcpy(result.d_innerNodes, result.innerNodes, result.innerNodeCount * sizeof(BFSInnerNode), cudaMemcpyHostToDevice);
 	}
-	if (octree->d_leaves == NULL)
+	if (result.d_leaves == NULL)
 	{
-		cudaMalloc( ( void ** ) &( octree->d_leaves ), octree->leafCount * sizeof( VisualData ) );	
-		cudaMemcpy( octree->d_leaves, octree->leaves, octree->leafCount * sizeof( VisualData ), cudaMemcpyHostToDevice );
+		cudaMalloc( ( void ** ) &( result.d_leaves ), result.leafCount * sizeof( VisualData ) );	
+		cudaMemcpy( result.d_leaves, result.leaves, result.leafCount * sizeof( VisualData ), cudaMemcpyHostToDevice );
 	}
 
-	octree->d_jobs.reset( new thrust::device_vector< BFSJob >() );
+	result.d_jobs.reset( new thrust::device_vector< BFSJob >() );
 
-	if( octree->d_jobs->empty() )
+	if( result.d_jobs->empty() )
 	{
 		// TODO: Allocate on heap
 		// TODO: Make this a thrust::host_vector
@@ -91,7 +88,7 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 			for (int i = queueStart; i < queueEnd; ++i)
 			{
 				BFSJob job = queue[i];
-				BFSInnerNode node = octree->innerNodes[job.index];				
+				BFSInnerNode node = result.innerNodes[job.index];				
 				unsigned char childIndex = 0;
 				for (unsigned int j = 0; j < 8; ++j)
 				{
@@ -113,25 +110,27 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 			queueEnd = queuePtr;			
 		}
 		
-		//cudaMalloc((void**) &(octree->d_jobs), (queueEnd - queueStart) * sizeof(BFSJob));	
-		//cudaMemcpy(octree->d_jobs, queue + queueStart, (queueEnd - queueStart) * sizeof(BFSJob), cudaMemcpyHostToDevice);
-		octree->d_jobs->resize( queueEnd - queueStart );
+		//cudaMalloc((void**) &(result.d_jobs), (queueEnd - queueStart) * sizeof(BFSJob));	
+		//cudaMemcpy(result.d_jobs, queue + queueStart, (queueEnd - queueStart) * sizeof(BFSJob), cudaMemcpyHostToDevice);
+		result.d_jobs->resize( queueEnd - queueStart );
 		cudaMemcpy
 		(
-			thrust::raw_pointer_cast( octree->d_jobs->data() ),
+			thrust::raw_pointer_cast( result.d_jobs->data() ),
 			queue + queueStart,
 			( queueEnd - queueStart ) * sizeof( BFSJob ),
 			cudaMemcpyHostToDevice
 		);
-		octree->jobCount = queueEnd - queueStart;	
-		octree->level = level;
+		result.jobCount = queueEnd - queueStart;	
+		result.level = level;
 	}
 
-	if (octree->d_animation == NULL)
+	if (result.d_animation == NULL)
 	{
-		cudaMalloc((void**) &(octree->d_animation), octree->frameCount * octree->boneCount * sizeof(Matrix));	
-		cudaMemcpy(octree->d_animation, octree->animation, octree->frameCount * octree->boneCount * sizeof(Matrix), cudaMemcpyHostToDevice);
+		cudaMalloc((void**) &(result.d_animation), result.frameCount * result.boneCount * sizeof(Matrix));	
+		cudaMemcpy(result.d_animation, result.animation, result.frameCount * result.boneCount * sizeof(Matrix), cudaMemcpyHostToDevice);
 	}
+
+	return result;
 }
 
 void BFSOctreeCleanup(BFSOctree *octree)
