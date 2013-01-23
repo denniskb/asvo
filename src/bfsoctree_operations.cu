@@ -7,7 +7,6 @@
 #include <cuda_runtime.h>
 
 #include "../inc/bfsinnernode.h"
-#include "../inc/bfsleaf.h"
 #include "../inc/bfsoctree.h"
 #include "../inc/glue.h"
 #include "../inc/matrix.h"
@@ -25,13 +24,13 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	fread(&result.leafCount, 4, 1, file);
 
 	result.innerNodes = (BFSInnerNode*) malloc(result.innerNodeCount * sizeof(BFSInnerNode));
-	result.leaves = (BFSLeaf*) malloc(result.leafCount * sizeof(BFSLeaf));
+	result.leaves = ( VisualData * ) malloc( result.leafCount * sizeof( VisualData ) );
 	result.d_innerNodes = NULL;
 	result.d_leaves = NULL;
 
 	fread(result.innerNodes, sizeof(BFSInnerNode), result.innerNodeCount, file);	
 
-	fread(result.leaves, sizeof(BFSLeaf), result.leafCount, file);
+	fread( result.leaves, sizeof( VisualData ), result.leafCount, file );
 
 	fread(&result.frameCount, 4, 1, file);
 	fread(&result.boneCount, 4, 1, file);
@@ -63,8 +62,8 @@ void BFSOctreeCopyToDevice(BFSOctree *octree)
 	}
 	if (octree->d_leaves == NULL)
 	{
-		cudaMalloc((void**) &(octree->d_leaves), octree->leafCount * sizeof(BFSLeaf));	
-		cudaMemcpy(octree->d_leaves, octree->leaves, octree->leafCount * sizeof(BFSLeaf), cudaMemcpyHostToDevice);
+		cudaMalloc( ( void ** ) &( octree->d_leaves ), octree->leafCount * sizeof( VisualData ) );	
+		cudaMemcpy( octree->d_leaves, octree->leaves, octree->leafCount * sizeof( VisualData ), cudaMemcpyHostToDevice );
 	}
 
 	octree->d_jobs.reset( new thrust::device_vector< BFSJob >() );

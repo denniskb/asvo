@@ -62,7 +62,7 @@ static __global__ void traverse
 (
 	unsigned long int innerNodeCount,
     BFSInnerNode * innerNodes,
-    BFSLeaf * leaves,
+    VisualData * leaves,
     float dimension,
     Matrix world, Vector3 camPos, Matrix view, Matrix projection,
     Matrix * animation, unsigned char boneCount,
@@ -94,10 +94,14 @@ static __global__ void traverse
 		node.childPtr = 0;
 		node.mask = 0;
 		
-		if (job.index < innerNodeCount)
-			node = innerNodes[job.index];
+		if( job.index < innerNodeCount )
+		{
+			node = innerNodes[ job.index ];
+		}
 		else
-			node.vd = leaves[job.index - innerNodeCount].vd;
+		{
+			node.vd = leaves[ job.index - innerNodeCount ];
+		}
 			
 		float gridCellDim = dimension / ( (float) ( 1 << octreeLevel ) );
 		float gridCellHalfDim = gridCellDim * 0.5f;

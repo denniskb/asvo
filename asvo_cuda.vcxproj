@@ -95,7 +95,6 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   <ItemGroup>
     <ClInclude Include="inc\bfsinnernode.h" />
     <ClInclude Include="inc\BFSJob.h" />
-    <ClInclude Include="inc\bfsleaf.h" />
     <ClInclude Include="inc\bfsoctree.h" />
     <ClInclude Include="inc\bfsoctree_operations.h" />
     <ClInclude Include="inc\Camera.h" />
