@@ -25,7 +25,6 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 	std::vector< BFSInnerNode > innerNodes( result.innerNodeCount );
 	std::vector< VisualData > leaves( result.leafCount );
-	result.d_innerNodes = NULL;
 	result.d_leaves = NULL;
 
 	fread( & innerNodes[ 0 ], sizeof( BFSInnerNode ), result.innerNodeCount, file );
@@ -51,13 +50,19 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 	/* Copy data to device */
 
-	cudaMalloc( ( void ** ) &( result.d_innerNodes ), result.innerNodeCount * sizeof( BFSInnerNode ) );
-	cudaMemcpy( result.d_innerNodes, & innerNodes[ 0 ], result.innerNodeCount * sizeof( BFSInnerNode ), cudaMemcpyHostToDevice );
+	result.d_innerNodes.reset( new thrust::device_vector< BFSInnerNode >( result.innerNodeCount ) );
+	cudaMemcpy
+	( 
+		thrust::raw_pointer_cast( result.d_innerNodes->data() ),
+		& innerNodes[ 0 ], 
+		result.innerNodeCount * sizeof( BFSInnerNode ),
+		cudaMemcpyHostToDevice
+	);
 	
 	cudaMalloc( ( void ** ) &( result.d_leaves ), result.leafCount * sizeof( VisualData ) );	
 	cudaMemcpy( result.d_leaves, & leaves[ 0 ], result.leafCount * sizeof( VisualData ), cudaMemcpyHostToDevice );
 
-	result.d_jobs.reset( new thrust::device_vector< BFSJob >() );
+	result.d_jobs.reset( new thrust::device_vector< BFSJob > );
 	// TODO: Allocate on heap
 	// TODO: Make this a thrust::host_vector
 	BFSJob queue[10000];
@@ -120,13 +125,12 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 void BFSOctreeCleanup(BFSOctree *octree)
 {
-	cudaFree(octree->d_innerNodes);
-	octree->d_innerNodes = NULL;
+	octree->d_innerNodes.reset< thrust::device_vector< BFSInnerNode > >( nullptr );
+	octree->innerNodeCount = 0;
 	
 	cudaFree(octree->d_leaves);
 	octree->d_leaves = NULL;
 
-	octree->d_jobs->clear();
 	octree->d_jobs.reset< thrust::device_vector< BFSJob > >( nullptr );
 	octree->jobCount = 0;
 

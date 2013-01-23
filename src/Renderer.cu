@@ -543,7 +543,7 @@ void Renderer::rasterize
 		traverse<<< nBlocks( hEndIndex - hStartIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
 		(
 			obj.data.innerNodeCount,
-			obj.data.d_innerNodes,
+			thrust::raw_pointer_cast( obj.data.d_innerNodes->data() ),
 			obj.data.d_leaves,
 			obj.data.dim,
 			obj.transform, cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
