@@ -7,7 +7,7 @@
 #include <helper_cuda.h>
 
 #include "object3d.h"
-#include "bfsoctree.h"
+#include "BFSOctree.h"
 #include "matrix.h"
 
 /**

@@ -4,7 +4,7 @@
 
 #include <helper_cuda.h>
 
-#include "bfsoctree.h"
+#include "BFSOctree.h"
 #include "matrix.h"
 
 /**

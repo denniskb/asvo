@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include "../inc/BFSJob.cuh"
-#include "../inc/bfsoctree_operations.h"
 #include "../inc/Light.h"
 
 // Include the implementations of all math functions.
@@ -18,6 +17,7 @@ static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tIllum;
 static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tSpec;
 static texture< uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat > tNormal;
 
+__device__
 unsigned long int d_getChildCountFromMask( unsigned long int mask )
 {
     return (   1ul & mask ) +
@@ -61,11 +61,11 @@ unsigned long int d_getChildCountFromMask( unsigned long int mask )
 static __global__ void traverse
 (
 	unsigned long int innerNodeCount,
-    BFSInnerNode * innerNodes,
-    VisualData * leaves,
+    BFSInnerNode const * innerNodes,
+    VisualData const * leaves,
     float dimension,
     Matrix world, Vector3 camPos, Matrix view, Matrix projection,
-    Matrix * animation, unsigned char boneCount,
+    Matrix const * animation, unsigned char boneCount,
     unsigned int * depthBuffer, VoxelData * voxelBuffer,
 	int frameWidth, int frameHeight,
 	int animationFrameIndex,
@@ -468,11 +468,11 @@ void Renderer::render
 	uchar4 * outColorBuffer
 )
 {
-	int animationFrameIndex = BFSOctreeUpdate( & obj.data );
+	int animationFrameIndex = obj.data.update();
 
 	if( m_shadowMapping )
 	{
-		fillJobQueue( thrust::raw_pointer_cast( obj.data.d_jobs->data() ), obj.data.jobCount );
+		fillJobQueue( thrust::raw_pointer_cast( obj.data.jobs()->data() ), obj.data.jobs()->size() );
 		clearDepthBuffer();
 		clearShadowMap();
 
@@ -489,7 +489,7 @@ void Renderer::render
 		);
 	}
 
-	fillJobQueue( thrust::raw_pointer_cast( obj.data.d_jobs->data() ), obj.data.jobCount );
+	fillJobQueue( thrust::raw_pointer_cast( obj.data.jobs()->data() ), obj.data.jobs()->size() );
 	clearColorBuffer( outColorBuffer );
 	clearDepthBuffer();
 	if( ! m_shadowMapping )
@@ -525,7 +525,7 @@ void Renderer::rasterize
 )
 {
 	int hStartIndex = 0;
-	int hEndIndex = obj.data.jobCount;
+	int hEndIndex = obj.data.jobs()->size();
 
 	// TODO: Extract into DeviceQueue class
 	thrust::device_vector< int > dStartIndex( 1 );
@@ -534,7 +534,7 @@ void Renderer::rasterize
 
 	dTravQueuePtr[ 0 ] = hEndIndex;
 
-	int octreeLevel = obj.data.level;
+	int octreeLevel = obj.data.level();
 	do
 	{		
 		dStartIndex[ 0 ] = hStartIndex;
@@ -542,13 +542,13 @@ void Renderer::rasterize
 
 		traverse<<< nBlocks( hEndIndex - hStartIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
 		(
-			obj.data.innerNodeCount,
-			thrust::raw_pointer_cast( obj.data.d_innerNodes->data() ),
-			thrust::raw_pointer_cast( obj.data.d_leaves->data() ),
-			obj.data.dim,
+			obj.data.innerNodes()->size(),
+			thrust::raw_pointer_cast( obj.data.innerNodes()->data() ),
+			thrust::raw_pointer_cast( obj.data.leaves()->data() ),
+			obj.data.dim(),
 			obj.transform, cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
-			thrust::raw_pointer_cast( obj.data.d_animation->data() ),
-			obj.data.boneCount,
+			thrust::raw_pointer_cast( obj.data.animation()->data() ),
+			obj.data.boneCount(),
 			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
 			animationFrameIndex,
@@ -584,10 +584,10 @@ void Renderer::rasterize
 	}
 	else
 	{
-		cudaBindTextureToArray( tDiffuse, obj.data.diffuse->data(), cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tIllum, obj.data.illum->data(), cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tSpec, obj.data.spec->data(), cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tNormal, obj.data.normal->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tDiffuse, obj.data.diffuse()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tIllum, obj.data.illum()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tSpec, obj.data.spec()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tNormal, obj.data.normal()->data(), cudaCreateChannelDesc< uchar4 >() );
 
 		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(

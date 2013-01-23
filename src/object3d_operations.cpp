@@ -2,7 +2,7 @@
 
 #include <helper_cuda.h>
 
-#include "../inc/bfsoctree.h"
+#include "../inc/BFSOctree.h"
 #include "../inc/math3d.h"
 #include "../inc/matrix.h"
 #include "../inc/object3d.h"

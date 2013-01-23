@@ -7,7 +7,6 @@
 
 #include <helper_cuda.h>
 
-#include "../inc/bfsoctree_operations.h"
 #include "../inc/glue.h"
 #include "../inc/Light.h"
 #include "../inc/math3d.h"
@@ -33,14 +32,15 @@ int main(int argc, char **argv)
 	path.append( "../../content/" );
 
 	// Load an asvo from file.
-	Object3d imrod = obj3dInit(BFSOctreeImport
+	Object3d imrod = obj3dInit( BFSOctree
 	(
 		( path + "imrod.asvo" ).c_str(),
 		( path + "diffuse.raw" ).c_str(),
 		( path + "illum.raw" ).c_str(),
 		( path + "spec.raw" ).c_str(),
 		( path + "normal.raw" ).c_str()
-	), true);
+	),
+	true );
 
 	Vector3 rotAxis = { 1.f, 0.f, 0.f };
 	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
@@ -68,7 +68,6 @@ int main(int argc, char **argv)
 	glutMainLoop();	
 
 	// Do cleanup work.
-	BFSOctreeCleanup(&imrod.data);
 	glueCleanup();
 
 	return 0;
