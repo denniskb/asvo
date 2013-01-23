@@ -58,9 +58,15 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 		result.innerNodeCount * sizeof( BFSInnerNode ),
 		cudaMemcpyHostToDevice
 	);
-	
-	cudaMalloc( ( void ** ) &( result.d_leaves ), result.leafCount * sizeof( VisualData ) );	
-	cudaMemcpy( result.d_leaves, & leaves[ 0 ], result.leafCount * sizeof( VisualData ), cudaMemcpyHostToDevice );
+
+	result.d_leaves.reset( new thrust::device_vector< VisualData >( result.leafCount ) );
+	cudaMemcpy
+	( 
+		thrust::raw_pointer_cast( result.d_leaves->data() ),
+		& leaves[ 0 ],
+		result.leafCount * sizeof( VisualData ),
+		cudaMemcpyHostToDevice
+	);
 
 	result.d_jobs.reset( new thrust::device_vector< BFSJob > );
 	// TODO: Allocate on heap
@@ -128,8 +134,8 @@ void BFSOctreeCleanup(BFSOctree *octree)
 	octree->d_innerNodes.reset< thrust::device_vector< BFSInnerNode > >( nullptr );
 	octree->innerNodeCount = 0;
 	
-	cudaFree(octree->d_leaves);
-	octree->d_leaves = NULL;
+	octree->d_leaves.reset< thrust::device_vector< VisualData > >( nullptr );
+	octree->leafCount = 0;
 
 	octree->d_jobs.reset< thrust::device_vector< BFSJob > >( nullptr );
 	octree->jobCount = 0;

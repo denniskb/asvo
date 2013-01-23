@@ -19,14 +19,13 @@ typedef struct
 	// HACK: Use of managed ptr to defer initialization (we have hidden copies of BFSOctree)
 	// HACK: Use of shared ptr because you can't copy a unique_ptr
 	std::shared_ptr< thrust::device_vector< BFSInnerNode > > d_innerNodes;
-	VisualData * d_leaves;
+	std::shared_ptr< thrust::device_vector< VisualData > > d_leaves;
 	std::shared_ptr< thrust::device_vector< BFSJob > > d_jobs;
 	unsigned long int innerNodeCount;
 	unsigned long int leafCount;
 	unsigned short int jobCount;
 	unsigned char level;
 	float dim;
-	Matrix *animation;
 	Matrix *d_animation;
 	unsigned long int frameCount;
 	unsigned long int boneCount;

@@ -544,7 +544,7 @@ void Renderer::rasterize
 		(
 			obj.data.innerNodeCount,
 			thrust::raw_pointer_cast( obj.data.d_innerNodes->data() ),
-			obj.data.d_leaves,
+			thrust::raw_pointer_cast( obj.data.d_leaves->data() ),
 			obj.data.dim,
 			obj.transform, cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
 			obj.data.d_animation, obj.data.boneCount,
