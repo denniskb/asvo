@@ -5,6 +5,7 @@
 #include <cstdlib>
 
 #include <cuda_runtime.h>
+#include <thrust/host_vector.h>
 
 #include "../inc/bfsinnernode.h"
 #include "../inc/bfsoctree.h"
@@ -23,24 +24,22 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	fread( & result.innerNodeCount, 4, 1, file);
 	fread( & result.leafCount, 4, 1, file);
 
-	std::vector< BFSInnerNode > innerNodes( result.innerNodeCount );
-	std::vector< VisualData > leaves( result.leafCount );
-	result.d_leaves = NULL;
+	thrust::host_vector< BFSInnerNode > innerNodes( result.innerNodeCount );
+	thrust::host_vector< VisualData > leaves( result.leafCount );
 
 	fread( & innerNodes[ 0 ], sizeof( BFSInnerNode ), result.innerNodeCount, file );
 	fread( & leaves[ 0 ], sizeof( VisualData ), result.leafCount, file );
 
-	fread(&result.frameCount, 4, 1, file);
-	fread(&result.boneCount, 4, 1, file);
+	fread( & result.frameCount, 4, 1, file );
+	fread( & result.boneCount, 4, 1, file );
 
-	std::vector< Matrix > animation( result.frameCount * result.boneCount );
+	thrust::host_vector< Matrix > animation( result.frameCount * result.boneCount );
 	fread( & animation[ 0 ], sizeof( Matrix ), result.frameCount * result.boneCount, file );
-	result.d_animation = NULL;
 
 	fclose(file);
 
-	result.currentFrame = (double*) malloc(sizeof(double));
-	*(result.currentFrame) = 0.0;
+	result.currentFrame = ( double * ) malloc( sizeof( double ) );
+	*( result.currentFrame ) = 0.0;
 
 	// TODO: Replace hard-coded values
 	result.diffuse.reset( new Texture( diffuse, 1024, 1024 ) );
@@ -50,78 +49,58 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 
 	/* Copy data to device */
 
-	result.d_innerNodes.reset( new thrust::device_vector< BFSInnerNode >( result.innerNodeCount ) );
-	cudaMemcpy
-	( 
-		thrust::raw_pointer_cast( result.d_innerNodes->data() ),
-		& innerNodes[ 0 ], 
-		result.innerNodeCount * sizeof( BFSInnerNode ),
-		cudaMemcpyHostToDevice
-	);
+	result.d_innerNodes.reset( new thrust::device_vector< BFSInnerNode > );
+	* result.d_innerNodes = innerNodes;
 
-	result.d_leaves.reset( new thrust::device_vector< VisualData >( result.leafCount ) );
-	cudaMemcpy
-	( 
-		thrust::raw_pointer_cast( result.d_leaves->data() ),
-		& leaves[ 0 ],
-		result.leafCount * sizeof( VisualData ),
-		cudaMemcpyHostToDevice
-	);
+	result.d_leaves.reset( new thrust::device_vector< VisualData > );
+	* result.d_leaves = leaves;
 
-	result.d_jobs.reset( new thrust::device_vector< BFSJob > );
-	// TODO: Allocate on heap
-	// TODO: Make this a thrust::host_vector
-	BFSJob queue[10000];
+	thrust::host_vector< BFSJob > queue;
 	for (unsigned long int i = 0; i < 8; ++i)
 	{
-		queue[i] = make_BFSJob
+		queue.push_back( make_BFSJob
 		( 
 			i + 1, 
 			i & 1ul, 
 			( i & 2ul ) >> 1, 
 			( i & 4ul ) >> 2 
-		);
+		));
 	}
 
-	int level = 1, queueStart = 0, queueEnd = 8, queuePtr = 8;
+	int level = 1, queueStart = 0, queueEnd = queue.size();
 	// TODO: Test for level == nLevels
 	while( ( queueEnd - queueStart ) <= 512 || queueStart == queueEnd )
 	{
 		for (int i = queueStart; i < queueEnd; ++i)
 		{
-			BFSJob job = queue[i];
+			BFSJob job = queue[ i ];
 			BFSInnerNode node = innerNodes[ job.index ];				
 			unsigned char childIndex = 0;
 			for (unsigned int j = 0; j < 8; ++j)
 			{
 				if ((node.mask & (1ul << j)) != 0)
 				{						
-					queue[queuePtr++] = make_BFSJob
+					queue.push_back( make_BFSJob
 					( 
 						node.childPtr + childIndex,
 						2 * job.x + ( j & 1u ),
 						2 * job.y + ( ( j & 2u ) >> 1 ),
 						2 * job.z + ( ( j & 4u ) >> 2 )
-					);
+					));
 					++childIndex;
 				}
 			}
 		}			
 		++level;
 		queueStart = queueEnd;
-		queueEnd = queuePtr;			
+		queueEnd = queue.size();			
 	}
-		
-	result.d_jobs->resize( queueEnd - queueStart );
-	cudaMemcpy
-	(
-		thrust::raw_pointer_cast( result.d_jobs->data() ),
-		queue + queueStart,
-		( queueEnd - queueStart ) * sizeof( BFSJob ),
-		cudaMemcpyHostToDevice
-	);
+
 	result.jobCount = queueEnd - queueStart;	
 	result.level = level;
+
+	result.d_jobs.reset( new thrust::device_vector< BFSJob > );
+	result.d_jobs->assign( queue.cbegin() + queueStart, queue.cbegin() + queueEnd );
 
 	cudaMalloc( ( void ** ) &( result.d_animation ), result.frameCount * result.boneCount * sizeof( Matrix ) );	
 	cudaMemcpy( result.d_animation, & animation[ 0 ], result.frameCount * result.boneCount * sizeof( Matrix ), cudaMemcpyHostToDevice );
