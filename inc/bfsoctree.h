@@ -21,15 +21,17 @@ typedef struct
 	std::shared_ptr< thrust::device_vector< BFSInnerNode > > d_innerNodes;
 	std::shared_ptr< thrust::device_vector< VisualData > > d_leaves;
 	std::shared_ptr< thrust::device_vector< BFSJob > > d_jobs;
+	std::shared_ptr< thrust::device_vector< Matrix > > d_animation;
+
 	unsigned long int innerNodeCount;
 	unsigned long int leafCount;
 	unsigned short int jobCount;
 	unsigned char level;
 	float dim;
-	Matrix *d_animation;
 	unsigned long int frameCount;
 	unsigned long int boneCount;
 	double *currentFrame;
+
 	// HACK: Prevents us from unnecessarily copying textures but
 	// forces all BFSOctrees to share one set of textures.
 	std::shared_ptr< Texture > diffuse;

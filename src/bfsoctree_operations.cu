@@ -102,8 +102,8 @@ BFSOctree BFSOctreeImport(char const * path, char const * diffuse, char const * 
 	result.d_jobs.reset( new thrust::device_vector< BFSJob > );
 	result.d_jobs->assign( queue.cbegin() + queueStart, queue.cbegin() + queueEnd );
 
-	cudaMalloc( ( void ** ) &( result.d_animation ), result.frameCount * result.boneCount * sizeof( Matrix ) );	
-	cudaMemcpy( result.d_animation, & animation[ 0 ], result.frameCount * result.boneCount * sizeof( Matrix ), cudaMemcpyHostToDevice );
+	result.d_animation.reset( new thrust::device_vector< Matrix > );
+	* result.d_animation = animation;
 
 	return result;
 }
@@ -119,8 +119,7 @@ void BFSOctreeCleanup(BFSOctree *octree)
 	octree->d_jobs.reset< thrust::device_vector< BFSJob > >( nullptr );
 	octree->jobCount = 0;
 
-	cudaFree(octree->d_animation);
-	octree->d_animation = NULL;
+	octree->d_animation.reset< thrust::device_vector< Matrix > >( nullptr );
 	octree->frameCount = octree->boneCount = 0;
 
 	free(octree->currentFrame);
