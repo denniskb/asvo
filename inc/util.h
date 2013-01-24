@@ -33,13 +33,4 @@
 
 #endif
 
-/**
- * Loads a raw image file and stores its contents into
- * the provided pointer.
- *
- * @param ptr      The pointer to store the image data in.
- * @param fileName The image to load.
- */
-void loadImage(unsigned char **ptr, char *fileName);
-
 #endif

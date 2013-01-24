@@ -122,7 +122,6 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClCompile Include="src\math3d.cpp" />
     <ClCompile Include="src\object3d_operations.cpp" />
     <ClCompile Include="src\Texture.cpp" />
-    <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Renderer.cu" />
