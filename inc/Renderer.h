@@ -7,7 +7,7 @@
 #include "Light.h"
 #include "Matrix.h"
 #include "Object3D.h"
-#include "voxeldata.h"
+#include "VoxelData.h"
 
 class Renderer
 {
