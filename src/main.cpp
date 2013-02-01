@@ -10,8 +10,7 @@
 #include "../inc/glue.h"
 #include "../inc/Light.h"
 #include "../inc/math3d.h"
-#include "../inc/object3d.h"
-#include "../inc/object3d_operations.h"
+#include "../inc/Object3D.h"
 #include "../inc/Renderer.h"
 #include "../inc/vector3.h"
 
@@ -32,7 +31,7 @@ int main(int argc, char **argv)
 	path.append( "../../content/" );
 
 	// Load an asvo from file.
-	Object3d imrod = obj3dInit( BFSOctree
+	Object3D imrod( new BFSOctree
 	(
 		( path + "imrod.asvo" ).c_str(),
 		( path + "diffuse.raw" ).c_str(),
@@ -43,7 +42,7 @@ int main(int argc, char **argv)
 	true );
 
 	Vector3 rotAxis = { 1.f, 0.f, 0.f };
-	obj3dAssignTransform(&imrod, h_createRotation(rotAxis, -1.5707f));
+	imrod.assignTransform( h_createRotation( rotAxis, -1.5707f ) );
 
 	// Set up the light.
 	Vector3 lightPosition = { -1.f, -0.5f, 0.5f };

@@ -22,7 +22,7 @@ static double _msFrameTime = 33;
 static GLuint _pbo;
 static GLuint _texture;
 static Renderer * _pRenderer;
-static Object3d _obj;
+static Object3D _obj;
 static Light _light;
 
 /*
@@ -75,7 +75,7 @@ bool glueInit
     unsigned short int windowHeight,
     int argc, char **argv,
     Renderer * pRenderer,
-	Object3d obj,
+	Object3D obj,
 	Light const & light
 )
 {

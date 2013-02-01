@@ -461,18 +461,18 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 
 void Renderer::render
 (
-	Object3d & obj,
+	Object3D & obj,
 	Camera const & cam,
 	Light const & light,
 
 	uchar4 * outColorBuffer
 )
 {
-	int animationFrameIndex = obj.data.update();
+	int animationFrameIndex = obj.data()->update();
 
 	if( m_shadowMapping )
 	{
-		fillJobQueue( thrust::raw_pointer_cast( obj.data.jobs()->data() ), obj.data.jobs()->size() );
+		fillJobQueue( thrust::raw_pointer_cast( obj.data()->jobs()->data() ), obj.data()->jobs()->size() );
 		clearDepthBuffer();
 		clearShadowMap();
 
@@ -489,7 +489,7 @@ void Renderer::render
 		);
 	}
 
-	fillJobQueue( thrust::raw_pointer_cast( obj.data.jobs()->data() ), obj.data.jobs()->size() );
+	fillJobQueue( thrust::raw_pointer_cast( obj.data()->jobs()->data() ), obj.data()->jobs()->size() );
 	clearColorBuffer( outColorBuffer );
 	clearDepthBuffer();
 	if( ! m_shadowMapping )
@@ -514,7 +514,7 @@ void Renderer::render
 
 void Renderer::rasterize
 (
-	Object3d const & obj,
+	Object3D const & obj,
 	Camera const & cam,
 	Light const & light,
 	int animationFrameIndex,
@@ -525,7 +525,7 @@ void Renderer::rasterize
 )
 {
 	int hStartIndex = 0;
-	int hEndIndex = obj.data.jobs()->size();
+	int hEndIndex = obj.data()->jobs()->size();
 
 	// TODO: Extract into DeviceQueue class
 	thrust::device_vector< int > dStartIndex( 1 );
@@ -534,7 +534,7 @@ void Renderer::rasterize
 
 	dTravQueuePtr[ 0 ] = hEndIndex;
 
-	int octreeLevel = obj.data.level();
+	int octreeLevel = obj.data()->level();
 	do
 	{		
 		dStartIndex[ 0 ] = hStartIndex;
@@ -542,13 +542,13 @@ void Renderer::rasterize
 
 		traverse<<< nBlocks( hEndIndex - hStartIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
 		(
-			obj.data.innerNodes()->size(),
-			thrust::raw_pointer_cast( obj.data.innerNodes()->data() ),
-			thrust::raw_pointer_cast( obj.data.leaves()->data() ),
-			obj.data.dim(),
-			obj.transform, cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
-			thrust::raw_pointer_cast( obj.data.animation()->data() ),
-			obj.data.boneCount(),
+			obj.data()->innerNodes()->size(),
+			thrust::raw_pointer_cast( obj.data()->innerNodes()->data() ),
+			thrust::raw_pointer_cast( obj.data()->leaves()->data() ),
+			obj.data()->dim(),
+			obj.transform(), cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
+			thrust::raw_pointer_cast( obj.data()->animation()->data() ),
+			obj.data()->boneCount(),
 			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
 			animationFrameIndex,
@@ -584,10 +584,10 @@ void Renderer::rasterize
 	}
 	else
 	{
-		cudaBindTextureToArray( tDiffuse, obj.data.diffuse()->data(), cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tIllum, obj.data.illum()->data(), cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tSpec, obj.data.spec()->data(), cudaCreateChannelDesc< uchar4 >() );
-		cudaBindTextureToArray( tNormal, obj.data.normal()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tDiffuse, obj.data()->diffuse()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tIllum, obj.data()->illum()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tSpec, obj.data()->spec()->data(), cudaCreateChannelDesc< uchar4 >() );
+		cudaBindTextureToArray( tNormal, obj.data()->normal()->data(), cudaCreateChannelDesc< uchar4 >() );
 
 		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(

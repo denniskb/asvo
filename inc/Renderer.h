@@ -6,7 +6,7 @@
 #include "Camera.h"
 #include "Light.h"
 #include "Matrix.h"
-#include "object3d.h"
+#include "Object3D.h"
 #include "voxeldata.h"
 
 class Renderer
@@ -17,7 +17,7 @@ public:
 
 	void render
 	(
-		Object3d & obj,
+		Object3D & obj,
 		Camera const & cam,
 		Light const & light,
 		
@@ -46,7 +46,7 @@ private:
 
 	void rasterize
 	(
-		Object3d const & obj,
+		Object3D const & obj,
 		Camera const & cam,
 		Light const & light,
 		int animationFrameIndex,

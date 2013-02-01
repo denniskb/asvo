@@ -10,7 +10,7 @@
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
 
-#include "object3d.h"
+#include "Object3D.h"
 
 class Light;
 class Renderer;
@@ -38,7 +38,7 @@ bool glueInit
     unsigned short int windowHeight,
     int argc, char **argv,
     Renderer * pRenderer,
-	Object3d obj,
+	Object3D obj,
 	Light const & light
 );
 
