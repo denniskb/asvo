@@ -5,7 +5,7 @@
 
 #include "Camera.h"
 #include "Light.h"
-#include "matrix.h"
+#include "Matrix.h"
 #include "object3d.h"
 #include "voxeldata.h"
 

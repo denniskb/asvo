@@ -4,7 +4,7 @@
 
 #include "../inc/BFSOctree.h"
 #include "../inc/math3d.h"
-#include "../inc/matrix.h"
+#include "../inc/Matrix.h"
 #include "../inc/object3d.h"
 
 Object3d obj3dInit(BFSOctree data, bool rhsCoordinateSystem)

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "matrix.h"
+#include "Matrix.h"
 #include "vector3.h"
 
 class Camera

@@ -100,7 +100,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\glue.h" />
     <ClInclude Include="inc\Light.h" />
     <ClInclude Include="inc\math3d.h" />
-    <ClInclude Include="inc\matrix.h" />
+    <ClInclude Include="inc\Matrix.h" />
     <ClInclude Include="inc\object3d.h" />
     <ClInclude Include="inc\object3d_operations.h" />
     <ClInclude Include="inc\Texture.h" />

@@ -5,7 +5,7 @@
 #include <helper_cuda.h>
 
 #include "BFSOctree.h"
-#include "matrix.h"
+#include "Matrix.h"
 
 /**
  * Encapsulates the raw data representation of a 3D object (the BFSOctree)

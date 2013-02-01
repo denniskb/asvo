@@ -8,7 +8,7 @@
 
 #include "object3d.h"
 #include "BFSOctree.h"
-#include "matrix.h"
+#include "Matrix.h"
 
 /**
  * Initializes a 3D model.

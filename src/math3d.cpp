@@ -1,6 +1,6 @@
 #include "../inc/math3d.h"
 
-#include "../inc/matrix.h"
+#include "../inc/Matrix.h"
 #include "../inc/util.h"
 #include "../inc/vector3.h"
 
