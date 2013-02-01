@@ -93,7 +93,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="inc\bfsinnernode.h" />
+    <ClInclude Include="inc\BFSInnerNode.h" />
     <ClInclude Include="inc\BFSJob.h" />
     <ClInclude Include="inc\BFSOctree.h" />
     <ClInclude Include="inc\Camera.h" />

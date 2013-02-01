@@ -4,7 +4,7 @@
 
 #include <thrust/device_vector.h>
 
-#include "bfsinnernode.h"
+#include "BFSInnerNode.h"
 #include "BFSJob.h"
 #include "matrix.h"
 #include "Texture.h"
