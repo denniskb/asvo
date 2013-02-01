@@ -1,6 +1,6 @@
 #pragma once
 
-#include "visualdata.h"
+#include "VisualData.h"
 
 /**
  * Represents an inner node of a BFSOctree.

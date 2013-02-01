@@ -107,7 +107,7 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\vector2.h" />
     <ClInclude Include="inc\vector3.h" />
     <ClInclude Include="inc\vector4.h" />
-    <ClInclude Include="inc\visualdata.h" />
+    <ClInclude Include="inc\VisualData.h" />
     <ClInclude Include="inc\voxeldata.h" />
     <ClInclude Include="inc\Renderer.h" />
   </ItemGroup>
