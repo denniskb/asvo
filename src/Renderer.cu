@@ -10,9 +10,6 @@
 // in the same .cu file.
 #include "math3d.cpp"
 
-/* Textures */
-static texture< unsigned, cudaTextureType1D, cudaReadModeElementType > tDepthBuffer;
-
 __device__
 unsigned long int d_getChildCountFromMask( unsigned long int mask )
 {
@@ -254,7 +251,6 @@ static __global__ void traverse
  */
 static __global__ void draw
 (
-	unsigned int * depthBuffer,
 	uchar4 * colorBuffer,
 	VoxelData * voxelBuffer,
 	float * shadowMap,
@@ -263,6 +259,8 @@ static __global__ void draw
     Vector3 light,
 	Matrix lightWorldViewProjection,
 	float diffusePower,
+
+	cudaTextureObject_t depthBuffer,
 
 	cudaTextureObject_t diffuse,
 	cudaTextureObject_t illum,
@@ -288,9 +286,9 @@ static __global__ void draw
 		for (int i = 0; i < 9; ++i)
 		{
 			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);
-			if ((depth = tex1Dfetch(tDepthBuffer, index2)) < minDepth)
+			if( ( depth = tex1Dfetch< unsigned >( depthBuffer, index2 ) ) < minDepth )
 			{		
-				vd = voxelBuffer[index2];				
+				vd = voxelBuffer[ index2 ];				
 				if (fabsf(vd.pos.x - .5f - x) <= vd.pos.z)			
 					if (fabsf(vd.pos.y - .5f - y) <= vd.pos.w)
 					{
@@ -383,7 +381,7 @@ static __global__ void draw
  */
 static __global__ void drawShadowMap
 (
-	unsigned int * depthBuffer,
+	cudaTextureObject_t depthBuffer,
 	float * shadowMap,
 	VoxelData * voxelBuffer,
 	int frameWidth, int frameHeight
@@ -405,7 +403,7 @@ static __global__ void drawShadowMap
 		for (int i = 0; i < 9; ++i)
 		{
 			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);						
-			if ((depth = tex1Dfetch(tDepthBuffer, index2)) < minDepth)
+			if( ( depth = tex1Dfetch< unsigned >( depthBuffer, index2 ) ) < minDepth )
 			{		
 				vd = voxelBuffer[index2];				
 				if (fabsf(vd.pos.x - .5f - x) <= vd.pos.z)				
@@ -440,6 +438,29 @@ Renderer::Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadow
 	m_dDepthBuffer.resize( resolution() );
 	m_dVoxelBuffer.resize( resolution() );
 	m_dShadowMap.resize( resolution() );
+
+	cudaResourceDesc depthBufferResDesc;
+	std::memset( & depthBufferResDesc, 0, sizeof( depthBufferResDesc ) );
+
+	depthBufferResDesc.resType = cudaResourceTypeLinear;
+	depthBufferResDesc.res.linear.desc = cudaCreateChannelDesc< unsigned >();
+	depthBufferResDesc.res.linear.devPtr = thrust::raw_pointer_cast( m_dDepthBuffer.data() );
+	depthBufferResDesc.res.linear.sizeInBytes = m_dDepthBuffer.size() * 4;
+
+	cudaTextureDesc depthBufferTexDesc;
+	std::memset( & depthBufferTexDesc, 0, sizeof( depthBufferTexDesc ) );
+
+	depthBufferTexDesc.addressMode[ 0 ] = cudaAddressModeClamp;
+	depthBufferTexDesc.filterMode = cudaFilterModePoint;
+	depthBufferTexDesc.normalizedCoords = false;
+	depthBufferTexDesc.readMode = cudaReadModeElementType;
+
+	cudaCreateTextureObject( & m_tDepthBuffer, & depthBufferResDesc, & depthBufferTexDesc, nullptr );
+}
+
+Renderer::~Renderer()
+{
+	cudaDestroyTextureObject( m_tDepthBuffer );
 }
 
 
@@ -549,19 +570,11 @@ void Renderer::rasterize
 	}
 	while( hEndIndex - hStartIndex > 0 );
 	
-	cudaBindTexture
-	(
-		(size_t *) 0,
-		tDepthBuffer,
-		(void *) thrust::raw_pointer_cast( m_dDepthBuffer.data() ),
-		cudaCreateChannelDesc< unsigned >(),
-		(size_t) ( resolution() * sizeof( unsigned int ) )
-	);
 	if( shadowPass )
 	{
 		drawShadowMap<<< nBlocks( resolution(), nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
 		(
-			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), 
+			m_tDepthBuffer,
 			thrust::raw_pointer_cast( m_dShadowMap.data() ), 
 			thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight
@@ -571,7 +584,6 @@ void Renderer::rasterize
 	{
 		draw<<< nBlocks( resolution(), nTHREADS_DRAW_KERNEL ), nTHREADS_DRAW_KERNEL >>>
 		(
-			thrust::raw_pointer_cast( m_dDepthBuffer.data() ),
 			outColorBuffer,
 			thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			thrust::raw_pointer_cast( m_dShadowMap.data() ),
@@ -580,13 +592,14 @@ void Renderer::rasterize
 			light.camera().viewProjectionMatrix(),
 			light.diffusePower(),
 
+			m_tDepthBuffer,
+
 			obj.data()->diffuse()->textureObject(),
 			obj.data()->illum()->textureObject(),
 			obj.data()->normal()->textureObject(),
 			obj.data()->spec()->textureObject()
 		);
 	}
-	cudaUnbindTexture( tDepthBuffer );
 }
 
 

@@ -14,6 +14,7 @@ class Renderer
 public:
 
 	Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
+	~Renderer();
 
 	void render
 	(
@@ -43,6 +44,8 @@ private:
 	thrust::device_vector< unsigned int > m_dDepthBuffer;
 	thrust::device_vector< VoxelData > m_dVoxelBuffer;
 	thrust::device_vector< float > m_dShadowMap;
+
+	cudaTextureObject_t m_tDepthBuffer;
 
 	void rasterize
 	(
