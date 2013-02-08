@@ -17,13 +17,15 @@ public:
 	int width() const;	// in texels
 	int height() const;	// in texels
 
-	cudaArray const * data() const;
+	cudaTextureObject_t const & textureObject() const;
 
 private:
 
 	cudaArray * m_pData;
+	cudaTextureObject_t m_texture;
 	int m_width;
 	int m_height;
 
 	void copyFrom( Texture const & other );
+	void initTexture();
 };

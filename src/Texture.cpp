@@ -40,6 +40,8 @@ Texture::Texture( char const * fileName, int width, int height ) :
 		cudaChannelFormatDesc desc = cudaCreateChannelDesc< uchar4 >();
 		cudaMallocArray( & m_pData, & desc, width, height );
 		cudaMemcpyToArray( m_pData, 0, 0, & hImgRGBA[ 0 ], resolution * sizeof( uchar4 ), cudaMemcpyHostToDevice );
+
+		initTexture();
 	}
 }
 
@@ -58,6 +60,7 @@ Texture & Texture::operator=( Texture const & rhs )
 
 Texture::~Texture()
 {
+	cudaDestroyTextureObject( m_texture );
 	cudaFreeArray( m_pData );
 }
 
@@ -75,9 +78,9 @@ int Texture::height() const
 
 
 
-cudaArray const * Texture::data() const
+cudaTextureObject_t const & Texture::textureObject() const
 {
-	return m_pData;
+	return m_texture;
 }
 
 
@@ -95,6 +98,7 @@ void Texture::copyFrom( Texture const & other )
 
 	if( m_pData != nullptr )
 	{
+		cudaDestroyTextureObject( m_texture );
 		cudaFreeArray( m_pData );
 	}
 
@@ -104,8 +108,30 @@ void Texture::copyFrom( Texture const & other )
 	cudaMemcpyArrayToArray
 	(
 		m_pData, 0, 0,
-		other.data(), 0, 0,
+		other.m_pData, 0, 0,
 		resolution * sizeof( uchar4 ),
 		cudaMemcpyDeviceToDevice
 	);
+
+	initTexture();
+}
+
+void Texture::initTexture()
+{
+	cudaResourceDesc resDesc;
+	std::memset( & resDesc, 0, sizeof( resDesc ) );
+
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = m_pData;
+
+	cudaTextureDesc texDesc;
+	std::memset( & texDesc, 0, sizeof( texDesc ) );
+
+	texDesc.addressMode[ 0 ] = cudaAddressModeWrap;
+	texDesc.addressMode[ 1 ] = cudaAddressModeWrap;
+	texDesc.filterMode = cudaFilterModeLinear;
+	texDesc.normalizedCoords = true;
+	texDesc.readMode = cudaReadModeNormalizedFloat;
+	
+	cudaCreateTextureObject( & m_texture, & resDesc, & texDesc, nullptr );
 }
