@@ -12,4 +12,6 @@ public:
 	VisualData vd;
 	unsigned long int mask;
 	unsigned long int childPtr;
+
+	void deserialize( FILE * inFile );
 };

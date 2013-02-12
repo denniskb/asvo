@@ -104,15 +104,15 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\Object3D.h" />
     <ClInclude Include="inc\Texture.h" />
     <ClInclude Include="inc\util.h" />
-    <ClInclude Include="inc\vector2.h" />
     <ClInclude Include="inc\vector3.h" />
-    <ClInclude Include="inc\vector4.h" />
     <ClInclude Include="inc\VisualData.h" />
     <ClInclude Include="inc\Renderer.h" />
     <ClInclude Include="inc\VoxelData.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\BFSInnerNode.cpp" />
     <ClCompile Include="src\BFSJob.cpp" />
+    <ClCompile Include="src\VisualData.cpp" />
     <CudaCompile Include="src\BFSOctree.cu" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glue.cpp" />

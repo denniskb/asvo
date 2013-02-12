@@ -1,8 +1,6 @@
 #pragma once
 
-#include "vector2.h"
 #include "vector3.h"
-#include "vector4.h"
 
 /**
  * Stores all the neccessary data for drawing a
@@ -15,8 +13,8 @@ public:
 
 	Vector3 normal;
 	Vector3 tangent;
-	Vector4 pos;
-	Vector2 texCoord;
+	float4 pos;
+	float2 texCoord;
 	Vector3 eyeVec;
 	Vector3 center;
 };

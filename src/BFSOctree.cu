@@ -18,7 +18,7 @@ BFSOctree::BFSOctree
 	char const * normal
 )
 {	
-	FILE *file = fopen( model, "rb" );
+	FILE * file = fopen( model, "rb" );
 
 	assert( file != nullptr );
 
@@ -32,8 +32,15 @@ BFSOctree::BFSOctree
 	thrust::host_vector< BFSInnerNode > innerNodes( innerNodeCount );
 	thrust::host_vector< VisualData > leaves( leafCount );
 
-	fread( & innerNodes[ 0 ], sizeof( BFSInnerNode ), innerNodeCount, file );
-	fread( & leaves[ 0 ], sizeof( VisualData ), leafCount, file );
+	for( int i = 0; i < innerNodeCount; i++ )
+	{
+		innerNodes[ i ].deserialize( file );
+	}
+
+	for( int i = 0; i < leafCount; i++ )
+	{
+		leaves[ i ].deserialize( file );
+	}
 
 	fread( & m_frameCount, 4, 1, file );
 	fread( & m_boneCount, 4, 1, file );

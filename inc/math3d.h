@@ -7,9 +7,7 @@
 #define math3d_h
 
 #include "util.h"
-#include "vector2.h"
 #include "vector3.h"
-#include "vector4.h"
 #include "Matrix.h"
 
 // Definition of some constants.
