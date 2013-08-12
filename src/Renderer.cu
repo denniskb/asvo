@@ -5,7 +5,7 @@
 #include <vector_functions.h>
 #include <vector_types.h>
 
-#include "../inc/BFSJob.cuh"
+#include "../inc/BFSJob.h"
 #include "../inc/extended_helper_math.h"
 #include "../inc/float4x4.h"
 #include "../inc/Light.h"
@@ -214,7 +214,7 @@ static __global__ void traverse
 					y = 2 * job.y + ((w & 2u) >> 1);
 					z = 2 * job.z + ((w & 4u) >> 2);
 
-					jobQueue[ index++ ] = dmake_BFSJob( node.childPtr++, x, y, z );
+					jobQueue[ index++ ] = make_BFSJob( node.childPtr++, x, y, z );
 				}
 			}				
 		}

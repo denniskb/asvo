@@ -56,8 +56,7 @@
       <MaxRegCount>40</MaxRegCount>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)lib\$(Platform)\$(Configuration)\freeglut.dll $(SolutionDir)$(Platform)\$(Configuration)\freeglut.dll
-copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(Platform)\$(Configuration)\glew64.dll</Command>
+      <Command>copy "$(SolutionDir)lib\$(Platform)\$(Configuration)\freeglut.dll" "$(SolutionDir)$(Platform)\$(Configuration)\freeglut.dll"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>copy DLLs</Message>
@@ -88,8 +87,8 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
       <MaxRegCount>0</MaxRegCount>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)lib\$(Platform)\$(Configuration)\freeglut.dll $(SolutionDir)$(Platform)\$(Configuration)\freeglut.dll
-copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(Platform)\$(Configuration)\glew64.dll</Command>
+      <Command>copy "$(SolutionDir)lib\$(Platform)\$(Configuration)\freeglut.dll" "$(SolutionDir)$(Platform)\$(Configuration)\freeglut.dll"
+copy "$(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll" "$(SolutionDir)$(Platform)\$(Configuration)\glew64.dll"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>copy DLLs</Message>
@@ -113,7 +112,6 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BFSInnerNode.cpp" />
-    <ClCompile Include="src\BFSJob.cpp" />
     <ClCompile Include="src\VisualData.cpp" />
     <ClCompile Include="src\BFSOctree.cpp">
       <FileType>Document</FileType>
@@ -127,9 +125,6 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Renderer.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="inc\BFSJob.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
