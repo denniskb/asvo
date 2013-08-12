@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include <Windows.h>
 
 #include <memory>
@@ -6,13 +7,14 @@
 #include <GL/freeglut.h>
 
 #include <helper_cuda.h>
+#include <vector_functions.h>
+#include <vector_types.h>
 
+#include "../inc/extended_helper_math.h"
 #include "../inc/glue.h"
 #include "../inc/Light.h"
-#include "../inc/math3d.h"
 #include "../inc/Object3D.h"
 #include "../inc/Renderer.h"
-#include "../inc/vector3.h"
 
 int main(int argc, char **argv)
 {	
@@ -41,11 +43,11 @@ int main(int argc, char **argv)
 	),
 	true );
 
-	Vector3 rotAxis = { 1.f, 0.f, 0.f };
-	imrod.assignTransform( h_createRotation( rotAxis, -1.5707f ) );
+	float3 rotAxis = make_float3( 1.f, 0.f, 0.f );
+	imrod.assignTransform( make_rotation( rotAxis, -1.5707f ) );
 
 	// Set up the light.
-	Vector3 lightPosition = { -1.f, -0.5f, 0.5f };
+	float3 lightPosition = make_float3( -1.f, -0.5f, 0.5f );
 	float lightDiffusePower = 0.8;
 	Light light( lightPosition, lightDiffusePower );
 
@@ -56,8 +58,8 @@ int main(int argc, char **argv)
 	}
 
 	// Set up the camera.
-	Vector3 position = { 0.f, 25.f, -100.f };
-	Vector3 lookAt = { 0.f, 0.f, 0.f };	
+	float3 position = make_float3( 0.f, 25.f, -100.f );
+	float3 lookAt = make_float3( 0.f, 0.f, 0.f );
 	float fov = 1;
 	Camera camera( position, lookAt, fov, glueGetWindowRatio(), 10, 200 );
 	Camera::setGlobalCamera( camera );

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Camera.h"
-#include "vector3.h"
+#include <helper_math.h>
 
 class Light
 {
@@ -11,9 +11,9 @@ public:
 	Light();
 
 	// Creates a directional light at position looking at the origin
-	Light( Vector3 position, float diffusePower );
+	Light( float3 position, float diffusePower );
 
-	Vector3 direction() const;
+	float3 direction() const;
 	
 	float diffusePower() const;
 	float ambientPower() const;
@@ -24,6 +24,6 @@ public:
 
 private:
 
-	Vector3 m_direction;
+	float3 m_direction;
 	float m_diffusePower;
 };

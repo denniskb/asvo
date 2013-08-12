@@ -2,13 +2,15 @@
 
 #include <cstdint>
 
+#include <vector_functions.h>
+#include <vector_types.h>
+
 #include "../inc/BFSJob.cuh"
+#include "../inc/extended_helper_math.h"
+#include "../inc/float4x4.h"
 #include "../inc/Light.h"
 
-// Include the implementations of all math functions.
-// CUDA requires that function declarations and definitions are
-// in the same .cu file.
-#include "math3d.cpp"
+// TODO: Include math code
 
 __device__
 unsigned long int d_getChildCountFromMask( unsigned long int mask )
@@ -57,8 +59,8 @@ static __global__ void traverse
     BFSInnerNode const * innerNodes,
     VisualData const * leaves,
     float dimension,
-    Matrix world, Vector3 camPos, Matrix view, Matrix projection,
-    Matrix const * animation, unsigned char boneCount,
+    float4x4 world, float3 camPos, float4x4 view, float4x4 projection,
+    float4x4 const * animation, unsigned char boneCount,
     unsigned int * depthBuffer, VoxelData * voxelBuffer,
 	int frameWidth, int frameHeight,
 	int animationFrameIndex,
@@ -100,65 +102,67 @@ static __global__ void traverse
 		float gridCellHalfDim = gridCellDim * 0.5f;
 		
 		float minCoord = -0.5f * dimension;
-		Vector3 center = { fmaf(job.x, gridCellDim, minCoord + gridCellHalfDim),
+		float3 center = { fmaf(job.x, gridCellDim, minCoord + gridCellHalfDim),
 					       fmaf(job.y, gridCellDim, minCoord + gridCellHalfDim),
 						   fmaf(job.z, gridCellDim, minCoord + gridCellHalfDim) };		
 		
-		Vector3 skinnedCenter = ZERO;
+		float3 skinnedCenter = make_float3( 0 );
 		unsigned char involvedBones = 0;
         if (node.vd.boneWeights.x > 0.f)
 		{
-			skinnedCenter = d_vecMulS
-			(
-				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex0 ]),
-				node.vd.boneWeights.x
-			);
+			skinnedCenter = ( 
+				center * 
+				animation[ animationFrameIndex * boneCount + node.vd.boneIndex0 ] 
+			) * node.vd.boneWeights.x;
 			++involvedBones;
 		}
 		if (node.vd.boneWeights.y > 0.f)
 		{
-			skinnedCenter = d_vecAddVec( skinnedCenter, d_vecMulS(
-				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex1 ]), node.vd.boneWeights.y
-			));
+			skinnedCenter += ( 
+				center * 
+				animation[ animationFrameIndex * boneCount + node.vd.boneIndex1 ] 
+			) * node.vd.boneWeights.y;
 			++involvedBones;
 		}
 		if (node.vd.boneWeights.z > 0.f)
 		{
-			skinnedCenter = d_vecAddVec( skinnedCenter, d_vecMulS(
-				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex2 ]), node.vd.boneWeights.z
-			));
+			skinnedCenter += (
+				center * 
+				animation[ animationFrameIndex * boneCount + node.vd.boneIndex2 ]
+			) * node.vd.boneWeights.z;
 			++involvedBones;
 		}
 		if (node.vd.boneWeights.w > 0.f)
 		{
-			skinnedCenter = d_vecAddVec(skinnedCenter, d_vecMulS(
-				d_vecMulM(center, animation[ animationFrameIndex * boneCount+node.vd.boneIndex3 ]), node.vd.boneWeights.w
-			));
+			skinnedCenter += (
+				center *
+				animation[ animationFrameIndex * boneCount + node.vd.boneIndex3 ]
+			) * node.vd.boneWeights.w;
 			++involvedBones;
 		}
 		center = skinnedCenter;
-		Vector3 originalCenter = center;
+		float3 originalCenter = center;
 
 		// resizing of voxel to counter stretching.
 		gridCellHalfDim *= fminf(2.f, involvedBones);
 
-		center = d_vecMulM(center, world);
-		Vector3 eyeVec = d_vecNormalize(d_vecSubVec(camPos, center));
+		center = center * world;
+		float3 eyeVec = normalize( camPos - center );
 
-		center = d_vecMulM(center, view);
-		Vector3 dimVec = { gridCellHalfDim, gridCellHalfDim, center.z };
+		center = center * view;
+		float3 dimVec = make_float3( gridCellHalfDim, gridCellHalfDim, center.z );
 		
-		center = d_vecMulM(center, projection);
-		dimVec = d_vecMulM(dimVec, projection);
+		center = center * projection;
+		dimVec = dimVec * projection;
 							
 		//viewing frustum + clockwise culling
-		node.vd.normal = d_vecMulM(node.vd.normal, world);
+		node.vd.normal = node.vd.normal * world;
 		// TODO: Add check whether adding the current node's children
 		// to the job queue would exceed the queue's size limit
 		if ( -1.f <= center.x + dimVec.x && center.x - dimVec.x <= 1.f &&
 			-1.f <= center.y + dimVec.x && center.y - dimVec.x <= 1.f &&
 			 0.f <= center.z + dimVec.x && center.z - dimVec.x <= 1.f &&
-			 ( octreeLevel <= 8 || d_vecDot( node.vd.normal, eyeVec ) >= -0.4f ))
+			 ( octreeLevel <= 8 || dot( node.vd.normal, eyeVec ) >= -0.4f ))
 		{	
 			center.x = (center.x + 1.f) * frameWidth * 0.5f;
 			center.y = frameHeight - (center.y + 1.f) * frameHeight * 0.5f;
@@ -217,11 +221,8 @@ static __global__ void traverse
 		else if (w == 1 && depth == depthBuffer[index])
 		{
 			VoxelData vd = { node.vd.normal,
-							 d_vecMulM(node.vd.tangent, world),
-							 center.x,
-							 center.y,
-							 dimVec.x,
-							 dimVec.y,
+							 node.vd.tangent * world,
+							 make_float4( center.x, center.y, dimVec.x, dimVec.y ),
 							 node.vd.texCoord,
 							 eyeVec,
 							 originalCenter };
@@ -256,8 +257,8 @@ static __global__ void draw
 	float * shadowMap,
 	int frameWidth, int frameHeight,
 
-    Vector3 light,
-	Matrix lightWorldViewProjection,
+    float3 light,
+	float4x4 lightWorldViewProjection,
 	float diffusePower,
 
 	cudaTextureObject_t depthBuffer,
@@ -309,7 +310,7 @@ static __global__ void draw
 			float4 color = make_float4(0.f, 0.f, 0.f, 0.f);			
 
 			//shadow mapping
-			minVd.center = d_vecMulM(minVd.center, lightWorldViewProjection);
+			minVd.center = minVd.center * lightWorldViewProjection;
 			minVd.center.x = (minVd.center.x + 1.f) * frameWidth * 0.5f;
 			minVd.center.y = frameHeight - (minVd.center.y + 1.f) * frameHeight * 0.5f;
 
@@ -328,13 +329,15 @@ static __global__ void draw
 			{
 				//normal mapping
 				tempf = tex2D< float4 >( normal, minVd.texCoord.x, minVd.texCoord.y );
-				Vector3 tempv = d_vecCross(minVd.normal, minVd.tangent);
-				minVd.normal = d_vecNormalize(d_vecAddVec(d_vecMulS(minVd.normal, tempf.z),
-											  d_vecAddVec(d_vecMulS(minVd.tangent, tempf.x),
-														  d_vecMulS(tempv, tempf.y))));
+				float3 tempv = cross( minVd.normal, minVd.tangent );
+				minVd.normal = normalize(
+					minVd.normal  * tempf.z + 
+					minVd.tangent * tempf.x + 
+					tempv * tempf.y
+				);
 				
 				tempf = tex2D< float4 >( illum, minVd.texCoord.x, minVd.texCoord.y );
-				float intensity = fmaxf(0.f, d_vecDot(minVd.normal, light));				
+				float intensity = fmaxf( 0.f, dot( minVd.normal, light ) );				
 				if (intensity > 0.f || diffusePower < 1.f)
 				{					
 					color = tex2D< float4 >( diffuse, minVd.texCoord.x, minVd.texCoord.y );
@@ -343,8 +346,8 @@ static __global__ void draw
 					color.z *= intensity * diffusePower + tempf.z + 1.0f - diffusePower;
 				}
 
-				tempv = d_vecNormalize(d_vecAddVec(d_vecMulS(minVd.eyeVec, 0.5f), d_vecMulS(light, 0.5f)));				
-				intensity = powf(fmaxf(0.f, d_vecDot(tempv, minVd.normal)), 32.f); 
+				tempv = normalize( lerp( minVd.eyeVec, light, 0.5f ) );				
+				intensity = powf( fmaxf( 0.f, dot( tempv, minVd.normal ) ), 32.f ); 
 				if (intensity > 0.f)
 				{
 					tempf = tex2D< float4 >( spec, minVd.texCoord.x, minVd.texCoord.y );

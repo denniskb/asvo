@@ -70,6 +70,9 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(CUDA_INC_PATH);$(NVCUDASAMPLES_ROOT)common\inc</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -97,14 +100,13 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClInclude Include="inc\BFSJob.h" />
     <ClInclude Include="inc\BFSOctree.h" />
     <ClInclude Include="inc\Camera.h" />
+    <ClInclude Include="inc\extended_helper_math.h" />
+    <ClInclude Include="inc\float4x4.h" />
     <ClInclude Include="inc\glue.h" />
     <ClInclude Include="inc\Light.h" />
-    <ClInclude Include="inc\math3d.h" />
-    <ClInclude Include="inc\Matrix.h" />
     <ClInclude Include="inc\Object3D.h" />
     <ClInclude Include="inc\Texture.h" />
     <ClInclude Include="inc\util.h" />
-    <ClInclude Include="inc\vector3.h" />
     <ClInclude Include="inc\VisualData.h" />
     <ClInclude Include="inc\Renderer.h" />
     <ClInclude Include="inc\VoxelData.h" />
@@ -113,12 +115,13 @@ copy $(SolutionDir)lib\$(Platform)\$(Configuration)\glew64.dll $(SolutionDir)$(P
     <ClCompile Include="src\BFSInnerNode.cpp" />
     <ClCompile Include="src\BFSJob.cpp" />
     <ClCompile Include="src\VisualData.cpp" />
-    <CudaCompile Include="src\BFSOctree.cu" />
+    <ClCompile Include="src\BFSOctree.cpp">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glue.cpp" />
     <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\math3d.cpp" />
     <ClCompile Include="src\Object3D.cpp" />
     <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>

@@ -6,7 +6,7 @@
 
 #include "BFSInnerNode.h"
 #include "BFSJob.h"
-#include "Matrix.h"
+#include "float4x4.h"
 #include "Texture.h"
 
 class BFSOctree
@@ -30,7 +30,7 @@ public:
 	thrust::device_vector< BFSInnerNode > const * innerNodes() const;
 	thrust::device_vector< VisualData > const * leaves() const;
 	thrust::device_vector< BFSJob > const * jobs() const;
-	thrust::device_vector< Matrix > const * animation() const;
+	thrust::device_vector< float4x4 > const * animation() const;
 
 	int level() const;
 	float dim() const;
@@ -48,7 +48,7 @@ private:
 	std::shared_ptr< thrust::device_vector< BFSInnerNode > > m_dpInnerNodes;
 	std::shared_ptr< thrust::device_vector< VisualData > > m_dpLeaves;
 	std::shared_ptr< thrust::device_vector< BFSJob > > m_dpJobs;
-	std::shared_ptr< thrust::device_vector< Matrix > > m_dpAnimation;
+	std::shared_ptr< thrust::device_vector< float4x4 > > m_dpAnimation;
 
 	unsigned char m_level;
 	float m_dim;

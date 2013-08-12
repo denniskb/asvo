@@ -1,11 +1,17 @@
 #include "../inc/Camera.h"
 
+#define NOMINMAX
 #include <Windows.h>
 
 #include <GL/freeglut.h>
 
+#include <helper_math.h>
+#include <vector_functions.h>
+#include <vector_types.h>
+
+#include "../inc/extended_helper_math.h"
+#include "../inc/float4x4.h"
 #include "../inc/glue.h"
-#include "../inc/math3d.h"
 
 std::unique_ptr< Camera > Camera::m_globalCamera( nullptr );
 
@@ -25,7 +31,7 @@ Camera & Camera::globalCamera()
 
 Camera::Camera
 (
-	Vector3 const & position, Vector3 const & lookAt,
+	float3 const & position, float3 const & lookAt,
     float fov, float aspectRatio,
 	float nearPlane, float farPlane
 ) :
@@ -42,13 +48,13 @@ Camera::Camera
 	m_button1Down( false ),
 	m_button2Down( false )
 {
-	m_projectionMatrix = h_createProjection( fov, aspectRatio, nearPlane, farPlane );
+	m_projectionMatrix = make_perspective( fov, aspectRatio, nearPlane, farPlane );
 }
 
 Camera::Camera
 (
-	Vector3 const & position, Vector3 const & lookAt,
-	Matrix const & projectionMatrix
+	float3 const & position, float3 const & lookAt,
+	float4x4 projectionMatrix
 ) :
 	m_position( position ),
 	m_lookAt( lookAt ),
@@ -70,24 +76,24 @@ Camera::Camera
 
 
 
-Vector3 Camera::position() const
+float3 Camera::position() const
 {
 	return m_position;
 }
 
-Matrix Camera::viewMatrix() const
+float4x4 Camera::viewMatrix() const
 {
-	return h_createCam( m_position, m_lookAt, UNIT_Y );
+	return make_lookat( m_position, m_lookAt, make_float3( 0, 1, 0 ) );
 }
 
-Matrix Camera::projectionMatrix() const
+float4x4 Camera::projectionMatrix() const
 {
 	return m_projectionMatrix;
 }
 
-Matrix Camera::viewProjectionMatrix() const
+float4x4 Camera::viewProjectionMatrix() const
 {
-	return h_mMulM( viewMatrix(), projectionMatrix() );
+	return viewMatrix() * projectionMatrix();
 }
 
 
@@ -109,27 +115,24 @@ void Camera::update( double msLastFrameTime )
 {
 	if( m_button1Down )
 	{
-		Matrix horRot = h_createRotation(
-			UNIT_Y, -( ( m_endX - m_startX ) / ( (double) glueGetWindowWidth() ) ) * msLastFrameTime * 0.01
+		float4x4 horRot = make_rotation(
+			make_float3( 0, 1, 0 ),
+			-( ( m_endX - m_startX ) / ( (double) glueGetWindowWidth() ) ) * msLastFrameTime * 0.01
 		);
-		Matrix vertRot = h_createRotation(
-			h_vecNormalize( h_vecCross( h_vecNormalize( h_vecSubVec( m_lookAt, m_position ) ), UNIT_Y ) ),
+		float4x4 vertRot = make_rotation(
+			normalize( cross( normalize( m_lookAt - m_position ), make_float3( 0, 1, 0 ) ) ),
 			( ( m_endY - m_startY ) / ( (double) glueGetWindowHeight() ) ) * msLastFrameTime * 0.01
 		);
-		m_position = h_vecSubVec( m_position, m_lookAt );
-		m_position = h_vecMulM( m_position, horRot );
-		m_position = h_vecMulM( m_position, vertRot );
-		m_position = h_vecAddVec( m_position, m_lookAt );
+		m_position += m_lookAt;
+		m_position =  m_position * horRot;
+		m_position =  m_position * vertRot;
+		m_position -= m_lookAt;
 	}
 	else if( m_button2Down )
 	{
-		m_position = h_vecSubVec( m_position, m_lookAt );
-		m_position = h_vecAddVec
-		(
-			m_position, 
-			h_vecMulS( m_position, ( ( m_endZ - m_startZ) / ( (double) glueGetWindowHeight() ) ) * msLastFrameTime * 0.01 )
-		);
-		m_position = h_vecAddVec( m_position, m_lookAt);
+		m_position -= m_lookAt;
+		m_position += m_position * ( ( m_endZ - m_startZ ) / ( (float) glueGetWindowHeight() ) ) * msLastFrameTime * 0.01;
+		m_position += m_lookAt;
 	}
 }
 

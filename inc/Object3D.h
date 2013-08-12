@@ -3,7 +3,7 @@
 #include <helper_cuda.h>
 
 #include "BFSOctree.h"
-#include "Matrix.h"
+#include "float4x4.h"
 
 /**
  * Encapsulates the raw data representation of a 3D object (the BFSOctree)
@@ -16,15 +16,15 @@ public:
 	Object3D();
 	Object3D( BFSOctree * data, bool rhsCoordianteSystem );
 
-	void assignTransform( Matrix const & transform );
+	void assignTransform( float4x4 const & transform );
 
 	BFSOctree const * data() const;
 	BFSOctree * data();
-	Matrix const & transform() const;
+	float4x4 const & transform() const;
 
 private:
 
 	std::shared_ptr< BFSOctree > m_data;
-	Matrix m_transform;
+	float4x4 m_transform;
 	bool m_rhsCoordSystem;
 };

@@ -1,6 +1,8 @@
 #include "../inc/Object3D.h"
 
-#include "../inc/math3d.h"
+#include <vector_types.h>
+
+#include "../inc/extended_helper_math.h"
 
 Object3D::Object3D()
 {
@@ -11,7 +13,7 @@ Object3D::Object3D( BFSOctree * data, bool rhsCoordianteSystem ) :
 	m_data( data ),
 	m_rhsCoordSystem( rhsCoordianteSystem )
 {
-	m_transform = IDENTITY;
+	m_transform = make_identity();
 	if( rhsCoordianteSystem )
 	{
 		m_transform.m33 = -1;
@@ -20,16 +22,16 @@ Object3D::Object3D( BFSOctree * data, bool rhsCoordianteSystem ) :
 
 
 
-void Object3D::assignTransform( Matrix const & transform )
+void Object3D::assignTransform( float4x4 const & transform )
 {
-	Matrix mul = IDENTITY;
+	float4x4 mul = make_identity();
 
 	if( m_rhsCoordSystem )
 	{
 		mul.m33 = -1.f;
 	}
 
-	m_transform = h_mMulM( mul, transform );
+	m_transform = ( mul * transform );
 }
 
 
@@ -44,7 +46,7 @@ BFSOctree * Object3D::data()
 	return m_data.get();
 }
 
-Matrix const & Object3D::transform() const
+float4x4 const & Object3D::transform() const
 {
 	return m_transform;
 }

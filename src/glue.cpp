@@ -1,5 +1,6 @@
 #include "../inc/glue.h"
 
+#define NOMINMAX
 #include <Windows.h>
 
 #include <ctime>
