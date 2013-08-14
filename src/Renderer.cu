@@ -10,8 +10,6 @@
 #include "../inc/float4x4.h"
 #include "../inc/Light.h"
 
-// TODO: Include math code
-
 __device__
 unsigned long int d_getChildCountFromMask( unsigned long int mask )
 {
@@ -65,7 +63,6 @@ static __global__ void traverse
 	int frameWidth, int frameHeight,
 	int animationFrameIndex,
 	int octreeLevel,
-	// TODO: Rename
 	int const * startIndex, int const * endIndex,
 	int * travQueuePtr,
 	BFSJob * jobQueue

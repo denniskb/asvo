@@ -15,7 +15,6 @@ public:
 	Renderer( int frameWidthInPixels, int frameHeightInPixels, bool shadowMapping );
 	~Renderer();
 
-	// TODO: Try and make obj a const param.
 	void render
 	(
 		Object3D const & obj,

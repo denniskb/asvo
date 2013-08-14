@@ -33,7 +33,6 @@ Texture::Texture( char const * fileName, int width, int height ) :
 		fclose(file);
 
 		std::vector< uchar4 > hImgRGBA( resolution );
-		// TODO: Improve performance by loading a 4byte word at once
 		for( int i = 0; i < resolution; ++i )
 		{
 			hImgRGBA[ i ] = make_uchar4

@@ -7,9 +7,6 @@ class Light
 {
 public:
 
-	// HACK: Remove once we get rid of a global light source
-	Light();
-
 	// Creates a directional light at position looking at the origin
 	Light( float3 position, float diffusePower );
 

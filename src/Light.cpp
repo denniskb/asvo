@@ -2,11 +2,6 @@
 
 #include "../inc/extended_helper_math.h"
 
-Light::Light()
-{
-
-}
-
 Light::Light( float3 position, float diffusePower ) :
 	m_direction( normalize( -position ) ),
 	m_diffusePower( diffusePower )
@@ -41,7 +36,6 @@ Camera Light::camera() const
 	(
 		m_direction * 50.0f,
 		make_float3( 0 ),
-		// TODO: Implement float4x4
 		make_orthographic( 100, 100, 10.f, 200.f )
 	);
 }
