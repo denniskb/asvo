@@ -14,7 +14,7 @@ This is the high performance CUDA implementation (aka ASVO@CUDA) of the C# proto
 
 - Windows 7 **64bit**
 - [CUDA 5](https://developer.nvidia.com/cuda-downloads)
-- CUDA capable GPU with Compute Capability 2.0 or higher, 1GB VRAM or more.
+- CUDA capable GPU with Compute Capability 3.0 or higher, 1GB VRAM or more.
 - Visual Studio 2010
 
 
@@ -33,6 +33,5 @@ After launching the program you can rotate the camera by holding down the *left*
 
 ## Roadmap
 
-1. Port project from C to C++. Refactor code to make use of the newest CUDA API features (thrust, streams, etc.).
-2. Remove Windows dependencies and make code platfrom-independant (remove assumptions about size and layout/endianness of types, provide make-file, etc.).
-3. Improve/Extend algorithm.
+1. Remove Windows dependencies and make code platfrom-independant (remove assumptions about size and layout/endianness of types, provide make-file, etc.).
+2. Improve/Extend algorithm.
