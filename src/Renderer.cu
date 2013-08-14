@@ -470,18 +470,17 @@ Renderer::~Renderer()
 
 void Renderer::render
 (
-	Object3D & obj,
+	Object3D const & obj,
 	Camera const & cam,
 	Light const & light,
+	int animationFrameIndex,
 
 	uchar4 * outColorBuffer
 )
 {
-	int animationFrameIndex = obj.data()->update();
-
 	if( m_shadowMapping )
 	{
-		fillJobQueue( thrust::raw_pointer_cast( obj.data()->jobs()->data() ), obj.data()->jobs()->size() );
+		fillJobQueue( thrust::raw_pointer_cast( obj.data()->jobs().data() ), obj.data()->jobs().size() );
 		clearDepthBuffer();
 		clearShadowMap();
 
@@ -498,7 +497,7 @@ void Renderer::render
 		);
 	}
 
-	fillJobQueue( thrust::raw_pointer_cast( obj.data()->jobs()->data() ), obj.data()->jobs()->size() );
+	fillJobQueue( thrust::raw_pointer_cast( obj.data()->jobs().data() ), obj.data()->jobs().size() );
 	clearColorBuffer( outColorBuffer );
 	clearDepthBuffer();
 	if( ! m_shadowMapping )
@@ -534,7 +533,7 @@ void Renderer::rasterize
 )
 {
 	int hStartIndex = 0;
-	int hEndIndex = obj.data()->jobs()->size();
+	int hEndIndex = obj.data()->jobs().size();
 
 	// TODO: Extract into DeviceQueue class
 	thrust::device_vector< int > dStartIndex( 1 );
@@ -551,12 +550,12 @@ void Renderer::rasterize
 
 		traverse<<< nBlocks( hEndIndex - hStartIndex, nTHREADS_TRAV_KERNEL ), nTHREADS_TRAV_KERNEL >>>
 		(
-			obj.data()->innerNodes()->size(),
-			thrust::raw_pointer_cast( obj.data()->innerNodes()->data() ),
-			thrust::raw_pointer_cast( obj.data()->leaves()->data() ),
+			obj.data()->innerNodes().size(),
+			thrust::raw_pointer_cast( obj.data()->innerNodes().data() ),
+			thrust::raw_pointer_cast( obj.data()->leaves().data() ),
 			obj.data()->dim(),
 			obj.transform(), cam.position(), cam.viewMatrix(), cam.projectionMatrix(),
-			thrust::raw_pointer_cast( obj.data()->animation()->data() ),
+			thrust::raw_pointer_cast( obj.data()->animation().data() ),
 			obj.data()->boneCount(),
 			thrust::raw_pointer_cast( m_dDepthBuffer.data() ), thrust::raw_pointer_cast( m_dVoxelBuffer.data() ),
 			m_frameWidth, m_frameHeight,
@@ -597,10 +596,10 @@ void Renderer::rasterize
 
 			m_tDepthBuffer,
 
-			obj.data()->diffuse()->textureObject(),
-			obj.data()->illum()->textureObject(),
-			obj.data()->normal()->textureObject(),
-			obj.data()->spec()->textureObject()
+			obj.data()->diffuse().textureObject(),
+			obj.data()->illum().textureObject(),
+			obj.data()->normal().textureObject(),
+			obj.data()->spec().textureObject()
 		);
 	}
 }

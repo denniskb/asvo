@@ -14,11 +14,20 @@ class Object3D;
 class Renderer;
 
 /*
+Limits what clients can do with the Glue Singleton.
+*/
+struct WindowInformation
+{
+	virtual int windowWidth() const = 0;
+	virtual int windowHeight() const = 0;
+};
+
+/*
 A thin wrapper around freeglut which covers initialization
 of the CUDA device, creation of textures, render targets,
 setting up the view port, etc.
 */
-class Glue
+class Glue : public WindowInformation
 {
 public:
 	
@@ -33,7 +42,7 @@ public:
 	Behavior is undefined if called without a preceding call to
 	setGlobalInstance!
 	*/
-	static Glue const & globalInstance();
+	static WindowInformation const & globalInstance();
 
 	/*
 	Initializes freeglut, OpenGL and CUDA and sets everything up
@@ -67,13 +76,10 @@ public:
 
 	void startGlutMainLoop() const;
 
-	int windowWidth() const;
-	int windowHeight() const;
-	int windowResolution() const;
-	// windowWidth() / windowHeight()
-	double windowAspectRatio() const;
+	int windowWidth() const override;
+	int windowHeight() const override;
 	
-	double lastFrameTimeInMilliSeconds() const;
+	double lastFrameTimeInMilliseconds() const;
 
 private:
 
@@ -114,5 +120,9 @@ private:
 	GLuint m_pbo;
 	GLuint m_texture;
 
-	double m_lastFrameTimeInMilliSeconds;
+	double m_lastFrameTimeInMilliseconds;
+
+	int windowResolution() const;
+	// windowWidth() / windowHeight()
+	double windowAspectRatio() const;
 };

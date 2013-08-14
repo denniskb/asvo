@@ -6,6 +6,8 @@ class Texture
 {
 public:
 
+	// Default constructor. Does not initialize the texture
+	Texture();
 	/* 
 	 * Loads a raw rgb image (3 bytes per pixel, encoded as r, g, b).
 	 */

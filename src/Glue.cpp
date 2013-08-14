@@ -31,7 +31,7 @@ void Glue::setGlobalInstance( Glue * glue )
 }
 
 // static 
-Glue const & Glue::globalInstance()
+WindowInformation const & Glue::globalInstance()
 {
 	return * m_globalInstance;
 }
@@ -55,7 +55,7 @@ Glue::Glue
 	m_model( model ),
 	m_light( light ),
 	m_camera( camera ),
-	m_lastFrameTimeInMilliSeconds( 0 )
+	m_lastFrameTimeInMilliseconds( 0 )
 {
 	// preconds
 	assert( windowWidth > 0 );
@@ -160,21 +160,11 @@ int Glue::windowHeight() const
 	return m_windowHeight;
 }
 
-int Glue::windowResolution() const
+
+
+double Glue::lastFrameTimeInMilliseconds() const
 {
-	return m_windowWidth * m_windowHeight;
-}
-
-double Glue::windowAspectRatio() const
-{
-	return ( (double) m_windowWidth / m_windowHeight );
-}
-
-
-
-double Glue::lastFrameTimeInMilliSeconds() const
-{
-	return m_lastFrameTimeInMilliSeconds;
+	return m_lastFrameTimeInMilliseconds;
 }
 
 
@@ -191,15 +181,17 @@ void Glue::display()
 	QueryPerformanceCounter( & start );
 	uchar4 * dptr = nullptr;
 
-	m_camera.update( lastFrameTimeInMilliSeconds() );
+	m_camera.update( lastFrameTimeInMilliseconds() );
 
 	cudaGLMapBufferObject( (void**) & dptr, m_pbo );
 
+	int animationFrameIndex = m_model->data()->update( lastFrameTimeInMilliseconds() );
 	m_renderer->render
 	(
 		* m_model,
 		m_camera,
 		m_light,
+		animationFrameIndex,
 
 		dptr
 	);
@@ -232,10 +224,10 @@ void Glue::display()
 	LARGE_INTEGER freq;
 	QueryPerformanceFrequency( & freq );
 
-	m_lastFrameTimeInMilliSeconds = ( end.QuadPart - start.QuadPart ) / ( (double) freq.QuadPart ) * 1000.0;
+	m_lastFrameTimeInMilliseconds = ( end.QuadPart - start.QuadPart ) / ( (double) freq.QuadPart ) * 1000.0;
 
 	char title[ 64 ];
-	sprintf( title, "asvo@cuda - %.1f fps", 1000.0 / lastFrameTimeInMilliSeconds() );
+	sprintf( title, "asvo@cuda - %.1f fps", 1000.0 / lastFrameTimeInMilliseconds() );
 	glutSetWindowTitle( title );
 }
 
@@ -251,4 +243,16 @@ void Glue::mouseFunc( int button, int state, int x, int y )
 void Glue::motionFunc( int newX, int newY )
 {
 	m_globalInstance->m_camera.handleMouseMovement( newX, newY );
+}
+
+
+
+int Glue::windowResolution() const
+{
+	return m_windowWidth * m_windowHeight;
+}
+
+double Glue::windowAspectRatio() const
+{
+	return ( (double) m_windowWidth / m_windowHeight );
 }

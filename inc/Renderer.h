@@ -18,9 +18,10 @@ public:
 	// TODO: Try and make obj a const param.
 	void render
 	(
-		Object3D & obj,
+		Object3D const & obj,
 		Camera const & cam,
 		Light const & light,
+		int animationFrameIndex,
 		
 		uchar4 * outColorBuffer
 	);

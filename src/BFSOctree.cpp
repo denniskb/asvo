@@ -7,7 +7,6 @@
 
 BFSOctree::BFSOctree()
 {
-
 }
 
 BFSOctree::BFSOctree
@@ -17,7 +16,12 @@ BFSOctree::BFSOctree
 	char const * illum, 
 	char const * spec, 
 	char const * normal
-)
+) :
+	// TODO: Replace hard-coded values
+	m_diffuse( diffuse, 1024, 1024 ),
+	m_illum( illum, 1024, 1024 ),
+	m_spec( spec, 1024, 1024 ),
+	m_normal( normal, 1024, 1024 )
 {	
 	FILE * file = fopen( model, "rb" );
 
@@ -53,19 +57,11 @@ BFSOctree::BFSOctree
 
 	m_currentFrame = 0.0;
 
-	// TODO: Replace hard-coded values
-	m_pDiffuse.reset( new Texture( diffuse, 1024, 1024 ) );
-	m_pIllum.reset( new Texture( illum, 1024, 1024 ) );
-	m_pSpec.reset( new Texture( spec, 1024, 1024 ) );
-	m_pNormal.reset( new Texture( normal, 1024, 1024 ) );
-
 	/* Copy data to device */
 
-	m_dpInnerNodes.reset( new thrust::device_vector< BFSInnerNode > );
-	* m_dpInnerNodes = innerNodes;
+	m_innerNodes = innerNodes;
 
-	m_dpLeaves.reset( new thrust::device_vector< VisualData > );
-	* m_dpLeaves = leaves;
+	m_leaves = leaves;
 
 	thrust::host_vector< BFSJob > queue;
 	for (unsigned long int i = 0; i < 8; ++i)
@@ -110,41 +106,39 @@ BFSOctree::BFSOctree
 
 	m_level = level;
 
-	m_dpJobs.reset( new thrust::device_vector< BFSJob > );
-	m_dpJobs->assign( queue.cbegin() + queueStart, queue.cbegin() + queueEnd );
+	m_jobs.assign( queue.cbegin() + queueStart, queue.cbegin() + queueEnd );
 
-	m_dpAnimation.reset( new thrust::device_vector< float4x4 > );
-	* m_dpAnimation = animation;
+	m_animation = animation;
 }
 
 
  
-int BFSOctree::update()
+int BFSOctree::update( double lastFrameTimeInMilliseconds )
 {
-	m_currentFrame += Glue::globalInstance().lastFrameTimeInMilliSeconds();
+	m_currentFrame += lastFrameTimeInMilliseconds;
 	return (int)( m_currentFrame * 0.06 ) % m_frameCount;
 }
 
 
 
-thrust::device_vector< BFSInnerNode > const * BFSOctree::innerNodes() const
+thrust::device_vector< BFSInnerNode > const & BFSOctree::innerNodes() const
 {
-	return m_dpInnerNodes.get();
+	return m_innerNodes;
 }
 
-thrust::device_vector< VisualData > const * BFSOctree::leaves() const
+thrust::device_vector< VisualData > const & BFSOctree::leaves() const
 {
-	return m_dpLeaves.get();
+	return m_leaves;
 }
 
-thrust::device_vector< BFSJob > const * BFSOctree::jobs() const
+thrust::device_vector< BFSJob > const & BFSOctree::jobs() const
 {
-	return m_dpJobs.get();
+	return m_jobs;
 }
 
-thrust::device_vector< float4x4 > const * BFSOctree::animation() const
+thrust::device_vector< float4x4 > const & BFSOctree::animation() const
 {
-	return m_dpAnimation.get();
+	return m_animation;
 }
 
 
@@ -166,22 +160,22 @@ int BFSOctree::boneCount() const
 	
 
 
-Texture const * BFSOctree::diffuse() const
+Texture const & BFSOctree::diffuse() const
 {
-	return m_pDiffuse.get();
+	return m_diffuse;
 }
 
-Texture const * BFSOctree::illum() const
+Texture const & BFSOctree::illum() const
 {
-	return m_pIllum.get();
+	return m_illum;
 }
 
-Texture const * BFSOctree::spec() const
+Texture const & BFSOctree::spec() const
 {
-	return m_pSpec.get();
+	return m_spec;
 }
 
-Texture const * BFSOctree::normal() const
+Texture const & BFSOctree::normal() const
 {
-	return m_pNormal.get();
+	return m_normal;
 }

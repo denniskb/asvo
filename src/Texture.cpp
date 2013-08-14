@@ -5,7 +5,15 @@
 
 #include <vector_types.h>
 
+Texture::Texture() :
+	m_pData( nullptr ),
+	m_width( 0 ),
+	m_height( 0 )
+{
+}
+
 Texture::Texture( char const * fileName, int width, int height ) :
+	m_pData( nullptr ),
 	m_width( width ),
 	m_height( height )
 {
