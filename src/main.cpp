@@ -52,26 +52,23 @@ int main(int argc, char **argv)
 	Camera camera( position, lookAt, fov, aspectRatio, 10, 200 );
 
 	// Initialize the GLUT framework.
-	bool success = false;
-	std::unique_ptr< Glue > glue( new Glue
+	if( ! Glue::init
 	( 
 		argc, argv, 
 		frameWidthInPixels, frameHeightInPixels, 
 		renderer, 
 		model, 
 		light, 
-		camera, 
-		
-		success 
-	));
-	if ( ! success )
+		camera 
+	))
 	{
 		return 1;
 	}
-	Glue::setGlobalInstance( glue.get() );
 
 	// Start the main render-and-update loop
-	glue->startGlutMainLoop();
+	Glue::startGlutMainLoop();
+
+	Glue::cleanUp();
 
 	return 0;
 }

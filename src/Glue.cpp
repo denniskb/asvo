@@ -24,16 +24,58 @@ The majority of this code is copied from Rob Farber's article
 // static 
 Glue * Glue::m_globalInstance = nullptr;
 
-// static 
-void Glue::setGlobalInstance( Glue * glue )
+// static
+bool Glue::init
+( 
+	int argc, char ** argv,
+	int windowWidth, int windowHeight,
+	Renderer * renderer,
+	Object3D * model,
+	Light light,
+	Camera camera
+)
 {
-	m_globalInstance = glue;
+	// preconds
+	assert( windowWidth > 0 );
+	assert( windowHeight > 0 );
+	assert( renderer != nullptr );
+	assert( model != nullptr );
+
+	bool result = false;
+
+	if( nullptr == m_globalInstance )
+	{
+		m_globalInstance = new Glue
+		(
+			argc, argv,
+			windowWidth, windowHeight,
+			renderer,
+			model,
+			light,
+			camera,
+
+			result
+		);
+	}
+
+	return result;
 }
 
-// static 
-WindowInformation const & Glue::globalInstance()
+// static
+void Glue::cleanUp()
 {
-	return * m_globalInstance;
+	if( m_globalInstance != nullptr )
+	{
+		delete m_globalInstance;
+	}
+}
+
+
+
+// static
+void Glue::startGlutMainLoop()
+{
+	glutMainLoop();
 }
 
 
@@ -142,33 +184,6 @@ Glue::~Glue()
 
 
 
-void Glue::startGlutMainLoop() const
-{
-	glutMainLoop();
-}
-
-
-
-// TODO: Handle window resize!
-int Glue::windowWidth() const
-{
-	return m_windowWidth;
-}
-
-int Glue::windowHeight() const
-{
-	return m_windowHeight;
-}
-
-
-
-double Glue::lastFrameTimeInMilliseconds() const
-{
-	return m_lastFrameTimeInMilliseconds;
-}
-
-
-
 // static 
 void Glue::displayFunc()
 {
@@ -181,11 +196,16 @@ void Glue::display()
 	QueryPerformanceCounter( & start );
 	uchar4 * dptr = nullptr;
 
-	m_camera.update( lastFrameTimeInMilliseconds() );
+	m_camera.update
+	( 
+		m_lastFrameTimeInMilliseconds,
+		m_windowWidth,
+		m_windowHeight
+	);
 
 	cudaGLMapBufferObject( (void**) & dptr, m_pbo );
 
-	int animationFrameIndex = m_model->data()->update( lastFrameTimeInMilliseconds() );
+	int animationFrameIndex = m_model->data()->update( m_lastFrameTimeInMilliseconds );
 	m_renderer->render
 	(
 		* m_model,
@@ -204,7 +224,7 @@ void Glue::display()
 	( 
 		GL_TEXTURE_2D, 
 		0, 0, 0, 
-		windowWidth(), windowHeight(),
+		m_windowWidth, m_windowHeight,
 		GL_RGBA, GL_UNSIGNED_BYTE, nullptr
 	);
 
@@ -227,7 +247,7 @@ void Glue::display()
 	m_lastFrameTimeInMilliseconds = ( end.QuadPart - start.QuadPart ) / ( (double) freq.QuadPart ) * 1000.0;
 
 	char title[ 64 ];
-	sprintf( title, "asvo@cuda - %.1f fps", 1000.0 / lastFrameTimeInMilliseconds() );
+	sprintf( title, "asvo@cuda - %.1f fps", 1000.0 / m_lastFrameTimeInMilliseconds );
 	glutSetWindowTitle( title );
 }
 

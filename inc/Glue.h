@@ -13,36 +13,16 @@
 class Object3D;
 class Renderer;
 
-/*
-Limits what clients can do with the Glue Singleton.
-*/
-struct WindowInformation
-{
-	virtual int windowWidth() const = 0;
-	virtual int windowHeight() const = 0;
-};
+
 
 /*
 A thin wrapper around freeglut which covers initialization
 of the CUDA device, creation of textures, render targets,
 setting up the view port, etc.
 */
-class Glue : public WindowInformation
+class Glue
 {
 public:
-	
-	/*
-	Singleton. Makes the provided instance available globally.
-	Used to query window dimensions and register freeglut event
-	handlers (which need to be raw function pointers).
-	@param glue does not take ownership of the pointer
-	*/
-	static void setGlobalInstance( Glue * glue );
-	/*
-	Behavior is undefined if called without a preceding call to
-	setGlobalInstance!
-	*/
-	static WindowInformation const & globalInstance();
 
 	/*
 	Initializes freeglut, OpenGL and CUDA and sets everything up
@@ -50,7 +30,7 @@ public:
 	@param renderer takes ownership of the pointer
 	@param model takes ownership of the pointer
 	
-	@param outSuccess returns true if the initialization was successful,
+	@return true if the initialization was successful,
 	false otherwise (in this case the app should be aborted)
 
 	@precond windowWidth > 0
@@ -58,6 +38,26 @@ public:
 	@precond renderer != nullptr
 	@precond model != nullptr
 	*/
+	static bool init
+	( 
+		int argc, char ** argv,
+		int windowWidth, int windowHeight,
+		Renderer * renderer,
+		Object3D * model,
+		Light light,
+		Camera camera
+	);
+	/*
+	Cleans up all initialized resources.
+	*/
+	static void cleanUp();
+
+	static void startGlutMainLoop();
+
+private:
+
+	static Glue * m_globalInstance;
+
 	Glue
 	( 
 		int argc, char ** argv,
@@ -69,21 +69,7 @@ public:
 
 		bool & outSuccess
 	);
-	/*
-	Cleans up all initialized resources.
-	*/
 	~Glue();
-
-	void startGlutMainLoop() const;
-
-	int windowWidth() const override;
-	int windowHeight() const override;
-	
-	double lastFrameTimeInMilliseconds() const;
-
-private:
-
-	static Glue * m_globalInstance;
 
 	/*
 	Registered as glutDisplayFunc.

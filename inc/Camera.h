@@ -30,7 +30,12 @@ public:
 	float4x4 projectionMatrix() const;
 	float4x4 viewProjectionMatrix() const;
 
-	void update( double msLastFrameTime );
+	void update
+	( 
+		double msLastFrameTime,
+		int windowWidthInPixels,
+		int windowHeightInPixels
+	);
 
 	void handleMouseButtonPress( int button, int state, int x, int y );
 	void handleMouseMovement( int newX, int newY );

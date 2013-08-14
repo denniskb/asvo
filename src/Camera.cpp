@@ -84,17 +84,22 @@ float4x4 Camera::viewProjectionMatrix() const
 
 
 
-void Camera::update( double msLastFrameTime )
+void Camera::update
+( 
+	double msLastFrameTime,
+	int windowWidthInPixels,
+	int windowHeightInPixels
+)
 {
 	if( m_button1Down )
 	{
 		float4x4 horRot = make_rotation(
 			make_float3( 0, 1, 0 ),
-			-( ( m_endX - m_startX ) / ( (double) Glue::globalInstance().windowWidth() ) ) * msLastFrameTime * 0.01
+			-( ( m_endX - m_startX ) / ( (double) windowWidthInPixels ) ) * msLastFrameTime * 0.01
 		);
 		float4x4 vertRot = make_rotation(
 			normalize( cross( normalize( m_lookAt - m_position ), make_float3( 0, 1, 0 ) ) ),
-			( ( m_endY - m_startY ) / ( (double) Glue::globalInstance().windowHeight() ) ) * msLastFrameTime * 0.01
+			( ( m_endY - m_startY ) / ( (double) windowHeightInPixels ) ) * msLastFrameTime * 0.01
 		);
 		m_position += m_lookAt;
 		m_position =  m_position * horRot;
@@ -104,7 +109,7 @@ void Camera::update( double msLastFrameTime )
 	else if( m_button2Down )
 	{
 		m_position -= m_lookAt;
-		m_position += m_position * ( ( m_endZ - m_startZ ) / ( (float) Glue::globalInstance().windowHeight() ) ) * msLastFrameTime * 0.01;
+		m_position += m_position * ( ( m_endZ - m_startZ ) / ( (float) windowHeightInPixels ) ) * msLastFrameTime * 0.01;
 		m_position += m_lookAt;
 	}
 }
