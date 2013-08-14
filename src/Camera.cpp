@@ -2,7 +2,7 @@
 
 #define NOMINMAX
 #include <Windows.h>
-
+#include <GL/glew.h>
 #include <GL/freeglut.h>
 
 #include <helper_math.h>
@@ -11,21 +11,7 @@
 
 #include "../inc/extended_helper_math.h"
 #include "../inc/float4x4.h"
-#include "../inc/glue.h"
-
-std::unique_ptr< Camera > Camera::m_globalCamera( nullptr );
-
-// static 
-void Camera::setGlobalCamera( Camera const & camera )
-{
-	m_globalCamera.reset( new Camera( camera ) );
-}
-
-// static 
-Camera & Camera::globalCamera()
-{
-	return * m_globalCamera.get();
-}
+#include "../inc/Glue.h"
 
 
 
@@ -98,30 +84,17 @@ float4x4 Camera::viewProjectionMatrix() const
 
 
 
-
-// static 
-void Camera::mouseFunc( int button, int state, int x, int y )
-{
-	globalCamera().handleMouseButtonPress( button, state, x, y );
-}
-
-// static 
-void Camera::motionFunc( int x, int y )
-{
-	globalCamera().handleMouseMovement( x, y );
-}
-
 void Camera::update( double msLastFrameTime )
 {
 	if( m_button1Down )
 	{
 		float4x4 horRot = make_rotation(
 			make_float3( 0, 1, 0 ),
-			-( ( m_endX - m_startX ) / ( (double) glueGetWindowWidth() ) ) * msLastFrameTime * 0.01
+			-( ( m_endX - m_startX ) / ( (double) Glue::globalInstance().windowWidth() ) ) * msLastFrameTime * 0.01
 		);
 		float4x4 vertRot = make_rotation(
 			normalize( cross( normalize( m_lookAt - m_position ), make_float3( 0, 1, 0 ) ) ),
-			( ( m_endY - m_startY ) / ( (double) glueGetWindowHeight() ) ) * msLastFrameTime * 0.01
+			( ( m_endY - m_startY ) / ( (double) Glue::globalInstance().windowHeight() ) ) * msLastFrameTime * 0.01
 		);
 		m_position += m_lookAt;
 		m_position =  m_position * horRot;
@@ -131,7 +104,7 @@ void Camera::update( double msLastFrameTime )
 	else if( m_button2Down )
 	{
 		m_position -= m_lookAt;
-		m_position += m_position * ( ( m_endZ - m_startZ ) / ( (float) glueGetWindowHeight() ) ) * msLastFrameTime * 0.01;
+		m_position += m_position * ( ( m_endZ - m_startZ ) / ( (float) Glue::globalInstance().windowHeight() ) ) * msLastFrameTime * 0.01;
 		m_position += m_lookAt;
 	}
 }

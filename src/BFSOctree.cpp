@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include "../inc/float4x4.h"
-#include "../inc/glue.h"
+#include "../inc/Glue.h"
 
 BFSOctree::BFSOctree()
 {
@@ -121,7 +121,7 @@ BFSOctree::BFSOctree
  
 int BFSOctree::update()
 {
-	m_currentFrame += glueGetLastFrameTime();
+	m_currentFrame += Glue::globalInstance().lastFrameTimeInMilliSeconds();
 	return (int)( m_currentFrame * 0.06 ) % m_frameCount;
 }
 
