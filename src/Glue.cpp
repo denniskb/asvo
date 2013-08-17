@@ -99,12 +99,6 @@ Glue::Glue
 	m_camera( camera ),
 	m_lastFrameTimeInMilliseconds( 0 )
 {
-	// preconds
-	assert( windowWidth > 0 );
-	assert( windowHeight > 0 );
-	assert( renderer != nullptr );
-	assert( model != nullptr );
-
 	// Initialize freeglut and OpenGL
 	glutInit( & argc, argv );
 	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE );
