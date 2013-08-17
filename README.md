@@ -12,10 +12,10 @@ This is the high performance CUDA implementation (aka ASVO@CUDA) of the C# proto
 
 ## Dependencies
 
-- Windows 7 **64bit**
-- [CUDA 5](https://developer.nvidia.com/cuda-downloads)
+- Windows 7 64bit or higher
+- CUDA 5.5
 - CUDA capable GPU with Compute Capability 3.0 or higher, 1GB VRAM or more.
-- Visual Studio 2010
+- Visual Studio 2012
 
 
 ## Usage
@@ -26,9 +26,8 @@ After launching the program you can rotate the camera by holding down the *left*
 ## Known Issues
 
 - Unnecessary Windows dependency (just for QueryHighPerformanceTimer and freeglut).
-- Broken 32bit build.
-- Outdated makefile 'standard.make'
-- **NOT(!) platform-independant: Code assumes that 'long' refers to 32bit integers**.
+- No 32bit build.
+- NOT platform-independant: Code assumes that 'long' refers to 32bit integers.
 
 
 ## Roadmap
