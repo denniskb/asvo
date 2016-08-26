@@ -1,9 +1,9 @@
-#include "../inc/BFSOctree.h"
+#include "BFSOctree.h"
 
 #include <cassert>
 
-#include "../inc/float4x4.h"
-#include "../inc/Glue.h"
+#include "float4x4.h"
+#include "Glue.h"
 
 BFSOctree::BFSOctree()
 {

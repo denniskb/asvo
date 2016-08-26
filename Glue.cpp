@@ -3,21 +3,19 @@ The majority of this code is copied from Rob Farber's article
 "CUDA, Supercomputing for the Masses" (http://www.drdobbs.com/parallel/cuda-supercomputing-for-the-masses-part/207200659)
 */
 
-#include "../inc/Glue.h"
+#include "Glue.h"
 
-#define NOMINMAX
-#include <Windows.h>
+#include <cassert>
+#include <chrono>
 
 #include <cuda_gl_interop.h>
 
 #include <GL/freeglut.h>
 #include <GL/glew.h>
 
-#include <cassert>
-
-#include "../inc/Light.h"
-#include "../inc/Object3D.h"
-#include "../inc/Renderer.h"
+#include "Light.h"
+#include "Object3D.h"
+#include "Renderer.h"
 
 
 
@@ -186,8 +184,6 @@ void Glue::displayFunc()
 
 void Glue::display()
 {
-	LARGE_INTEGER start;
-	QueryPerformanceCounter( & start );
 	uchar4 * dptr = nullptr;
 
 	m_camera.update
@@ -199,7 +195,8 @@ void Glue::display()
 
 	cudaGLMapBufferObject( (void**) & dptr, m_pbo );
 
-	int animationFrameIndex = m_model->data()->update( m_lastFrameTimeInMilliseconds );
+	int animationFrameIndex = m_model->data()->update( 16.6f );
+	auto t0 = std::chrono::high_resolution_clock::now();
 	m_renderer->render
 	(
 		* m_model,
@@ -209,6 +206,7 @@ void Glue::display()
 
 		dptr
 	);
+	auto t1 = std::chrono::high_resolution_clock::now();
 
 	cudaGLUnmapBufferObject( m_pbo );
 	glBindBuffer( GL_PIXEL_UNPACK_BUFFER, m_pbo );
@@ -232,13 +230,7 @@ void Glue::display()
 	glutSwapBuffers();
 	glutPostRedisplay();
 
-	LARGE_INTEGER end;
-	QueryPerformanceCounter( & end );
-
-	LARGE_INTEGER freq;
-	QueryPerformanceFrequency( & freq );
-
-	m_lastFrameTimeInMilliseconds = ( end.QuadPart - start.QuadPart ) / ( (double) freq.QuadPart ) * 1000.0;
+	m_lastFrameTimeInMilliseconds = std::chrono::duration< double >( t1 - t0 ).count() * 1000.0;
 
 	char title[ 64 ];
 	sprintf( title, "asvo@cuda - %.1f fps", 1000.0 / m_lastFrameTimeInMilliseconds );

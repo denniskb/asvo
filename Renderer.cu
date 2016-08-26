@@ -1,14 +1,14 @@
-#include "../inc/Renderer.h"
+#include "Renderer.h"
 
 #include <cstdint>
 
 #include <vector_functions.h>
 #include <vector_types.h>
 
-#include "../inc/BFSJob.h"
-#include "../inc/extended_helper_math.h"
-#include "../inc/float4x4.h"
-#include "../inc/Light.h"
+#include "BFSJob.h"
+#include "extended_helper_math.h"
+#include "float4x4.h"
+#include "Light.h"
 
 __device__
 unsigned long int d_getChildCountFromMask( unsigned long int mask )
@@ -103,7 +103,7 @@ static __global__ void traverse
 					       fmaf(job.y, gridCellDim, minCoord + gridCellHalfDim),
 						   fmaf(job.z, gridCellDim, minCoord + gridCellHalfDim) };		
 		
-		float3 skinnedCenter = make_float3( 0 );
+		float3 skinnedCenter = make_float3( 0, 0, 0 );
 		unsigned char involvedBones = 0;
         if (node.vd.boneWeights.x > 0.f)
 		{

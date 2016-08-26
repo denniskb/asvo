@@ -1,4 +1,4 @@
-#include "../inc/VisualData.h"
+#include "VisualData.h"
 
 void VisualData::deserialize( FILE * inFile )
 {

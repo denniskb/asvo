@@ -1,13 +1,1 @@
-*.opensdf
-*.pdb
-*.sdf
-*.suo
-*.swp
-*.vcxproj.filters
-*.vcxproj.user
-
-/bin/
-/Debug/
-/html/
-/ipch/
-/x64/
+/build

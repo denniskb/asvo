@@ -1,4 +1,4 @@
-#include "../inc/Texture.h"
+#include "Texture.h"
 
 #include <cassert>
 #include <vector>

@@ -1,8 +1,8 @@
-#include "../inc/Object3D.h"
+#include "Object3D.h"
 
 #include <vector_types.h>
 
-#include "../inc/extended_helper_math.h"
+#include "extended_helper_math.h"
 
 Object3D::Object3D()
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <helper_cuda.h>
+#include <vector_types.h>
 
 #include "BFSOctree.h"
 #include "float4x4.h"

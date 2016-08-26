@@ -1,15 +1,14 @@
 #include <memory>
 #include <string>
 
-#include <helper_cuda.h>
 #include <vector_functions.h>
 #include <vector_types.h>
 
-#include "../inc/extended_helper_math.h"
-#include "../inc/Glue.h"
-#include "../inc/Light.h"
-#include "../inc/Object3D.h"
-#include "../inc/Renderer.h"
+#include "extended_helper_math.h"
+#include "Glue.h"
+#include "Light.h"
+#include "Object3D.h"
+#include "Renderer.h"
 
 int main(int argc, char **argv)
 {	

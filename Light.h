@@ -1,7 +1,8 @@
 #pragma once
 
+#include <vector_types.h>
+
 #include "Camera.h"
-#include <helper_math.h>
 
 class Light
 {

@@ -1,17 +1,14 @@
-#include "../inc/Camera.h"
+#include "Camera.h"
 
-#define NOMINMAX
-#include <Windows.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
-#include <helper_math.h>
 #include <vector_functions.h>
 #include <vector_types.h>
 
-#include "../inc/extended_helper_math.h"
-#include "../inc/float4x4.h"
-#include "../inc/Glue.h"
+#include "extended_helper_math.h"
+#include "float4x4.h"
+#include "Glue.h"
 
 
 

@@ -1,4 +1,4 @@
-#include "../inc/BFSInnerNode.h"
+#include "BFSInnerNode.h"
 
 void BFSInnerNode::deserialize( FILE * inFile )
 {
