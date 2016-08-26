@@ -1,0 +1,32 @@
+- Adicionar Platform na documentação
+
+- Welcome 
+- License 
+- Change Log
+- Compiling Source Code 
++ Getting Started 
+  - Modelling a model
+  - Using XNAnimation
++ Advanced Features
+  - Baking complex animations
++ XNAnimation Class Library Reference
+  - SOURCE CODE DOCUMENTATION
+
+
+- Represents
+- Provides
+- Defines
+
+
+- Objetivo é poder exportar usando forward e inverse kinematics
+  - Adicionar no help como usar as ferramentas de IK, deve ter que ligar um bake
+  
+  - Qual versão do exportador você usa ? 6.1.0
+  
+  ----
+  
+  Quando recompilar o projeto, ou mudar os snks tem que:
+  - gerar novos snks usando a tool
+  - Mudar os snks de todos os projetos
+  - Mudar o friendly assembly no xnanimation para o xnanimation pipeline
+  - mexer no assemblyhelper

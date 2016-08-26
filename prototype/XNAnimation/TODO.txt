@@ -1,0 +1,107 @@
+FEATURES - VERSION 0.3.0.0 
+- General
+  - Easy to use. 
+    - Provides classes to handle skinned models, skeletons, animations clips, keyframes and poses.
+    - Provides controllers to handle animation playback. 
+  - High performance.
+    - Animation interpolation and blending made on the CPU.
+    - Model skinning made on the GPU. 
+  - Low memory footprint.
+    - Stores keyframe translation, orientation, and scale decomposed.
+    - Shares skeletons, animations and meshes resources. 
+  - Supports Windows and Xbox platforms. 
+- Animation playback
+  - Plays animations forward and backward.
+    - Constrols animation speed and looping.
+    - Supports linear, cubic and spherical keyframe interpolation.
+    - Stores keyframe translation, orientation, and scale decomposed for best interpolation.
+    - Interpolates translation, orientation and scale separately. 
+- Animation blending
+  - Supports cross fade between animation clips.
+    - Allows smooth transitions between animations. 
+- Material system
+  - Supports multiple point light sources (up to eight) with light attenuation.
+  - Materials with emissive, diffuse and specular properties.
+  - Supports diffuse texture (Normal and Specular textures planned).
+
+IMPLEMENTED FEATURES NOT LISTED
+- Can atttach bones to other bones, hierarchical between skeletons
+
+
+DISCARDED FEATURES
+- Remove AssemblyHelper to help easier source code build
+  - Commited dummy sign keys to the repository
+
+
+NEXT FEATURES
+
+BEFORE NEXT RELEASE
+- Suportar luzes direcionais tambem?
+- Mexer nos samples para colocar um exemplo do CopyAbsolutePosition e usar a matrix world
+
+- Coloca FAQ no ar
+- Create sample projects for Visual Studio Express
+- Improve documentation and add Platform item to them
+- Insert new tags at the split animation file
+  - Pad end animation
+  - remove animation after process
+- Enables split animation file to use a absolute path? Or document relative path
+- Sign libraries with a new key
+- Ver se o processador de texturas está usando MipMap e outros
+
+- You can use the Content Pipeline PipelineComponentScanner class to look up what processors are available, but there is no way to do this purely from MSBuild land.
+
+- Fazer igual no robot game, ter um HasRotation, HasTranslation e HasScale por AnimationChannel
+- Eu estou colocando string direto, usar isso: typeof(ShaderMaterialProcessor).Name
+
+
+- Split actual model processor into model, skeleton and animation processors
+- Separar validação do XML do conteúdo do XML em sí
+- Criar Helper para ler XML?
+- Criar vários validate methods
+- Create an importer to prevent the animation from being interpolated at 60Hz
+- Move error messages to the resource file
+- Arrumar um jeito do processador perceber quando o XML for alterado
+
+  
+- Postpone textures build
+- Avoid compilling the same texture two times
+  - Or supress warining 
+- Rename assemblies and project folders to something using the XNA Framework style
+- Allow the material map keys to be user configured
+- Allow DUMP MATERIALS
+- Add samples for the VS 2005 (not express)
+- Create a model viewer
+  
+- XNAnimation.Effect: Split the SkinnedModelEffect into two other effects
+  - SkinnedModelBasicEffect, SkinnedModelAdvancedEffect. Other effects providade by user.
+  - Não, acho melhor colocar só o SkinnedModelBasicEffect como está agora e facilitar a extensibilidade
+- PROCESSOR PARAMETER: Material File, Material File Enabled
+  - Use a XML file for the material
+- PROCESSOR PARAMETER: Animations File, Animations File Enabled
+  - Use a XML file to split the animations
+- PROCESSOR PARAMETER: Model's Effect
+  - List the available effects for the model. Let user create effects too
+- PROCESSOR PARAMETER: Rotate and Scale model's mesh
+
+- Arrumar para não definir duas vezes constantes no código do c# e no shader, tendo que atualizar
+  isso duas vezes
+
+- Arrumar o teste do efeito
+
+- Control animation by keyframe (Is it possible to implement this?)
+- Escalar a duração de uma animação
+- Reportar quando a animação terminar
+- Remove the Model from the SkinnedModel class and create a new hierarchy
+  - SkinnedModel / SkinnedModelMesh -> Contains a mesh and a skeleton
+- Custom bone control (ISkeletonController)
+- Blender / Blend Trees (IBlendeable?)
+
+- no work done for channels which are not used (eg, you don't pay for scale and shear if your animations don't use them)
+- Adicionar mais propriedades ao processador de modelos
+  - Cortar keyframes e separar em animações / Resampling de animações
+  - Rotacionar, Escalar e Transladar o modelo
+- Adicionar normal mapping e specular mapping
+- Comprimir keyframes
+- Criar um método para desenhar o modelo skinned
+- Salvar o World do modelo

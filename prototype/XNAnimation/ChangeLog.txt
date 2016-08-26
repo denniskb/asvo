@@ -1,0 +1,67 @@
+VERSION 0.7.0.0 BETA 3 - CHANGELOG (02/05/2010)
+XNAnimation:
+ - AnimationController: Added GetBoneAbsoluteTransform
+ - AnimationController: Added per bone rotation controllers
+ - SkinnedModelBoneCollection: Added bone name indexer/getboneid
+
+
+VERSION 0.7.0.0 BETA2 - CHANGELOG (06/30/2008)
+XNAnimation:
+ - SkinnedModelBasicEffect: Completely rewritten using shader models 2_0 and 2_B for better compatible.
+ - SkinnedModelBasicEffect: Point lights are now simpler (only color and position).
+ - SkinnedModelBasicEffect: Added supports for just one light source.
+ 
+VERSION 0.7.0.0 BETA - CHANGELOG (06/30/2008)
+General:
+- Improved documentation
+- Changed skinned model processor name to "Model - XNAnimation"
+- Changed skinned model effect processor name to "Model Material - XNAnimation"
+- Skinned model effect processor is now hided
+
+XNAnimation:
+- AnimationController: Faster animation update using binary keyframe search
+- AnimationController: (bug fixed) Keyframe scale is now correct handled
+- AnimationController: Removing exception generate while updating an animation controller before any
+  animation clip has started
+- AnimationController: (bug fixed) Loads the model's skeleton bind pose when a controller is created
+- SkinnedModelEffect: Improved number of supported bones from 58 to 80 (thanks to Jon Watte)
+- SkinnedModelEffect: (bug fixed) Properly handles translation on world transformation (thanks bryanedds)
+- SkinnedModelEffect: Reports vertex and pixel shader profile
+- SkinnedModelEffect: Added Normal Mapping support
+- SkinnedModelEffect: Added Specular Mapping support
+- Pose: Implements IEquatable, and == and != operators
+
+XNAnimationPipeline:
+- SkinnedModelProcessor: Added "Split Animation Filename". Uses an XML file to split the model's animations.
+- SkinnedModelProcessor: Added "Generate Tangent Frame". Generate tangent and binormal vectors for each vertex.
+- SkinnedModelProcessor: Added "Change Texture Path". Changes the path of all textures.
+- SkinnedModelProcessor: Added "Change Texture Path Type". Sets if the new texture path is absolute or relative.
+- SkinnedModelProcessor: Added "Model Rotation". Rotates the model over the Y,X,Z axes.
+- SkinnedModelProcessor: Added "Model Scaling". Scales the model.
+- SkinnedModelProcessor: Added ".Dump Hierarchy". (DEBUG) Dumps the model hierarchy
+- SkinnedModelProcessor: Added ".Dump Animations". (DEBuG) Dumps de model animations
+- SkinnedModelProcessor: "Bake Mesh Transforms" default is now TRUE
+- SkinnedModelProcessor: Skips invalid animations inside the model's skeleton
+- SkinnedModelProcessor: Skips invalid skeleton nodes inside the model's skeleton
+- SkinnedModelProcessor: Skips animation channels that does not affet the model's skeleton
+- SkinnedModelProcessor: Warning when processing a mesh child of a bone
+- SkinnedModelProcessor: Warning when processing a model without animations
+- SkinnedModelProcessor: Throws an exception when processing a geometry without material
+- SkinnedModelProcessor: Throws an exception when processing a geometry without blend weights channel
+- SkinnedModelProcessor: Throws an exception when the model's skeleton has more than 80 bones
+- SkinnedModelProcessor: Throws an exception when the model does not has a skeleton
+- SkinnedModelMaterialProcessor: Reads materials properties from the model's materials
+- SkinnedModelMaterialProcessor: Reads materials maps from the model's materials using pre-defined keys
+
+
+------------------------------------------------------------------------------------
+
+VERSION 0.3.0.0 - CHANGELOG (05/26/2008)
+- Keyframe data (translation, orientation, and scale) is now stored decomposed for better 
+interpolation and low memory footprint.
+- Keyframe data (translation, orientation and scale) can be interpolated separately now.
+- Added cubic and spherical keyframe interpolation.
+- Added cross fade blending between animation clips. Allows smooth transitions between animations.
+- Added support for the Xbox 360.
+- Preliminary documentation released.
+- New sample for Windows and Xbox released.

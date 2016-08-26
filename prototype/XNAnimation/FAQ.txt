@@ -1,0 +1,7 @@
+- Error normalizing vertex bone weights. BoneWeightCollection does not contain any weighting values.
+  - Clean all the solution. Close and open it.
+  
+- Quais formatos de arquivos sao suportados?
+- Como exportar meu modelo
+- Como usar a biblioteca?
+- Ela [e suportada no xbox e windows?
