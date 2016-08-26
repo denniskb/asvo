@@ -12,7 +12,7 @@ The project is divided into two sub projects: The root directory contains the hi
 
 ## Dependencies
 
-### CUDA/C++ high performance implentation 
+### CUDA/C++ high performance implementation 
 - CMAKE 3.0.0
 - CUDA 7.5
 - CUDA capable GPU with Compute Capability 3.0 or higher, 1GB VRAM or more.
@@ -32,3 +32,10 @@ After launching the program you can rotate the camera by holding down the *left*
 ## Known Issues
 
 - NOT platform-independant: Code assumes that 'long' refers to 32bit integers.
+
+
+## License
+
+- Author: Dennis Bautembach
+- ASVO: Creative Commons Attribution (CC BY 3.0): If you use any of the source code in your own code, please mention the original author's name in a comment or other appropriate place. ASVO itself uses code released under CC BY 3.0 and mentions the original authors in comments. Please maintain this information.
+- XNAnimation Library: Microsoft Public License (Ms-PL)
