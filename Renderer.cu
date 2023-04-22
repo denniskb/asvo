@@ -11,7 +11,7 @@
 #include "Light.h"
 
 __device__
-unsigned long int d_getChildCountFromMask( unsigned long int mask )
+std::uint32_t d_getChildCountFromMask( std::uint32_t mask )
 {
     return (   1ul & mask ) +
           ((   2ul & mask ) >> 1 ) +
@@ -53,7 +53,7 @@ unsigned long int d_getChildCountFromMask( unsigned long int mask )
  */
 static __global__ void traverse
 (
-	unsigned long int innerNodeCount,
+	std::uint32_t innerNodeCount,
     BFSInnerNode const * innerNodes,
     VisualData const * leaves,
     float dimension,
@@ -68,7 +68,7 @@ static __global__ void traverse
 	BFSJob * jobQueue
 )
 {
-	unsigned long int index = blockDim.x * blockIdx.x + threadIdx.x + ( * startIndex );	
+	std::uint32_t index = blockDim.x * blockIdx.x + threadIdx.x + ( * startIndex );	
 	short int x, y, z, w = 2;
 	unsigned int depth;
 
@@ -283,7 +283,7 @@ static __global__ void draw
 #pragma unroll 9
 		for (int i = 0; i < 9; ++i)
 		{
-			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight);
+			index2 = min(max(startIndex + curIndex, 0), frameWidth * frameHeight - 1);
 			if( ( depth = tex1Dfetch< unsigned >( depthBuffer, index2 ) ) < minDepth )
 			{		
 				vd = voxelBuffer[ index2 ];				
@@ -538,7 +538,7 @@ void Renderer::rasterize
 	thrust::device_vector< int > dTravQueuePtr( 1 );
 
 	dTravQueuePtr[ 0 ] = hEndIndex;
-
+	
 	int octreeLevel = obj.data()->level();
 	do
 	{		
@@ -568,7 +568,7 @@ void Renderer::rasterize
 		octreeLevel++;
 	}
 	while( hEndIndex - hStartIndex > 0 );
-	
+
 	if( shadowPass )
 	{
 		drawShadowMap<<< nBlocks( resolution(), nTHREADS_DRAW_SHADOW_KERNEL ), nTHREADS_DRAW_SHADOW_KERNEL >>>
@@ -599,6 +599,8 @@ void Renderer::rasterize
 			obj.data()->spec().textureObject()
 		);
 	}
+
+	cudaDeviceSynchronize();
 }
 
 
@@ -606,13 +608,12 @@ void Renderer::rasterize
 void Renderer::clearColorBuffer( uchar4 * dpOutColorBuffer )
 {
 	uchar4 const colorBufferClearValue = make_uchar4( 51, 51, 51, 255 );
-	thrust::device_ptr< uchar4 > wrappedPtr( dpOutColorBuffer );
 
-	thrust::fill
+	cudaMemset
 	( 
-		wrappedPtr,
-		wrappedPtr + resolution(),
-		colorBufferClearValue
+		dpOutColorBuffer,
+		*reinterpret_cast<int const*>(&colorBufferClearValue),
+		resolution() * sizeof(uchar4)
 	);
 }
 

@@ -1,17 +1,17 @@
 #pragma once
 
+#include <cstdint>
+
 #include "VisualData.h"
 
 /**
  * Represents an inner node of a BFSOctree.
  */
-class BFSInnerNode
-{
-public:
+class BFSInnerNode {
+ public:
+  VisualData vd;
+  std::uint32_t mask;
+  std::uint32_t childPtr;
 
-	VisualData vd;
-	unsigned long int mask;
-	unsigned long int childPtr;
-
-	void deserialize( FILE * inFile );
+  void deserialize(FILE* inFile);
 };
